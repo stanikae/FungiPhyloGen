@@ -27,15 +27,15 @@ process mqc {
 
   output:
    //path "multiqc_report.html", emit: mqc_raw
-   file "multiqc_report.html"
+   file "*.html"
 
 
   script:
   """
   #!/bin/env bash
-  
+  nam=$params.fileN
   #multiqc -f --no-data-dir -o "." "$fq"
-  multiqc -f --no-data-dir $fq 
+  multiqc -f --no-data-dir --filename "\$nam" $fq 
  
   """
 }
