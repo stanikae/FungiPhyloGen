@@ -33,6 +33,12 @@ include { fqc as frw } from './test_fastqc.nf' addParams(fqcOut: "$params.result
 include { fqc as fcln } from './test_fastqc.nf' addParams(fqcOut: "$params.resultsDir/fqc_clean")
 include { mqc as mraw} from './multiqc.nf' addParams(mqcOut: "$params.resultsDir/multiqc/raw", fileN: "${params.prjName}_raw")
 include { mqc as mclean } from './multiqc.nf' addParams(mqcOut: "$params.resultsDir/multiqc/clean", fileN: "${params.prjName}_clean")
+include { GETREPEATS } from './test_indexRef.nf'
+include { REPEATSBED } from './test_indexRef.nf'
+include { MASKREF } from './test_indexRef.nf' addParams(refMasked: "$params.resultsDir/masked")
+include { INDEXREF } from './test_indexRef.nf' addParams(refIndex: "$params.resultsDir/index")
+
+
 
 
 
@@ -49,7 +55,12 @@ workflow {
   fcln(file("$contaminants"),file("$adapters"),trim.out.rds.collect())			// fastqc on clean reads
   mraw(frw.out.collect())										// multiqc on raw reads
   mclean(fcln.out.collect())									// multiqc on clean reads
-
+  
+  // prepare and index ref file
+  GETREPEATS(file("$params.refseq"))
+  REPEATSBED(GETREPEATS.out.delta)
+  MASKREF(file("$params.refseq"),REPEATSBED.out.rpts_bed)
+  INDEXREF(MASKREF.out.masked_fa)
 
 }
 
