@@ -17,7 +17,7 @@ index_ch = Channel.fromPath(params.index)
 // create directories - optional
 params.fqcCln = file("$params.resultsDir/fqc_clean")
 params.fqcCln.mkdirs() ? ! params.fqcCln.exists() : 'Directory already exists' 
-
+params.bwaMem = file("$params.resultsDir/align")
 
 //params.flag = false
 
@@ -37,13 +37,14 @@ include { GETREPEATS } from './test_indexRef.nf'
 include { REPEATSBED } from './test_indexRef.nf'
 include { MASKREF } from './test_indexRef.nf' addParams(refMasked: "$params.resultsDir/masked")
 include { INDEXREF } from './test_indexRef.nf' addParams(refIndex: "$params.resultsDir/index")
-
-
-
+include { ALIGNBWAMEM } from './test_bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
+include { MARKDUPS } from './test_bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
+include { SAMINDEX } from './test_bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
 
 
 // load workflows
 include { trim } from './test_trimGalore.nf'
+include { ALN } from './test_bwaAlign.nf'
 
 
 // Run analysis
@@ -61,6 +62,18 @@ workflow {
   REPEATSBED(GETREPEATS.out.delta)
   MASKREF(file("$params.refseq"),REPEATSBED.out.rpts_bed)
   INDEXREF(MASKREF.out.masked_fa)
+  ALN(INDEXREF.out.prs,trim.out.rds)						// perform ref based mapping
+  MARKDUPS(ALN.out.bam) 
+  //MARKDUPS(ALN.out.bam
+  //            .map { file -> def key = file.name.replaceAll(".bam","")
+  //                     return tuple(key, file) } )
+
+  //MARKDUPS(ALN.out.bam
+  //            .map { file -> def key = file.name.toString().tokenize('.').get(0).replace('[','')
+  //           return tuple(key, file)}
+  //       )
+  
+  SAMINDEX(MARKDUPS.out.marked)
 
 }
 

@@ -15,7 +15,7 @@ process trimReads {
 
   output:
    //tuple val(sampleID), path("*val*.fq.gz"), emit: cln_reads
-   file '*val*.fq.gz'
+   path('*val*.fq.gz')
 
   script:
   """

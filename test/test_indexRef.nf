@@ -104,6 +104,7 @@ process INDEXREF {
 
   output:
    path(bwa) , emit: indx
+   val true, emit: prs
 
   script:
   """
