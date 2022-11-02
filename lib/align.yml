@@ -1,0 +1,13 @@
+name: fpgAlign
+channels:
+  - anaconda
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bwa=0.7.17
+  - bowtie2=2.4.5
+  - multiqc=1.*
+  - seqfu=1.15.*
+  - samtools=1.16.*
+  - picard=2.27.4

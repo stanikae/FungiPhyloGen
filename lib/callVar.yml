@@ -1,0 +1,10 @@
+name: fpgCallVariants
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - samtools=1.16.*
+  - bcftools=1.16
+  - snpeff=5.1
+  - gatk4=4.3.*.*
