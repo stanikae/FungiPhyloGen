@@ -18,6 +18,10 @@ index_ch = Channel.fromPath(params.index)
 params.fqcCln = file("$params.resultsDir/fqc_clean")
 params.fqcCln.mkdirs() ? ! params.fqcCln.exists() : 'Directory already exists' 
 params.bwaMem = file("$params.resultsDir/align")
+params.bcftl = file("$params.resultsDir/variants")
+params.bcftl.mkdirs() ? ! params.bcftl.exists() : 'Directory already exists'
+
+
 
 //params.flag = false
 
@@ -41,7 +45,7 @@ include { ALIGNBWAMEM } from './test_bwaAlign.nf' addParams(bwaMem: "$params.res
 include { MARKDUPS } from './test_bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
 include { SAMINDEX } from './test_bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
 include { CALLVARIANTS } from './test_variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants") 
-include { INDEXBCF } from './test_variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
+//include { INDEXBCF } from './test_variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
 include { SOFTFILTERVCF } from './test_variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
 include { BCFNORM } from './test_variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
 include { FILTERVCF } from './test_variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
@@ -74,7 +78,7 @@ workflow {
   INDEXREF(MASKREF.out.masked_fa)
   ALN(INDEXREF.out.prs,trim.out.rds)						// perform ref based mapping
   MARKDUPS(ALN.out.bam)
-  BCFTOOLS() 
+  BCFTOOLS(file("$params.refseq"),MARKDUPS.out.marked.collect()) 
   //MARKDUPS(ALN.out.bam
   //            .map { file -> def key = file.name.replaceAll(".bam","")
   //                     return tuple(key, file) } )

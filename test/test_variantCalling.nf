@@ -32,7 +32,7 @@ process CALLVARIANTS {
 
 
   bcftools mpileup -a AD -Q 30 -f $ref $bam -Ou \\
-  | bcftools call --threads "$params.threads" --ploidy "$params.ploidy" -mv -Ob -o bcftools/fpg.call.bcf
+  | bcftools call --threads $params.threads --ploidy "$params.ploidy" -mv -Ob -o bcftools/fpg.call.bcf
 
   bcftools index bcftools/fpg.call.bcf
 
@@ -79,8 +79,8 @@ process SOFTFILTERVCF {
 
 
    output:
-     path("bcftools/fpg_filt.bcf"), emit: bcf_filt
-     path("bcftools/fpg_filt.bcf.csi"), emit: idx_filt
+     path("bcftools/fpg.filt.bcf"), emit: bcf_filt
+     path("bcftools/fpg.filt.bcf.csi"), emit: idx_filt
 
 
    script:
@@ -88,10 +88,11 @@ process SOFTFILTERVCF {
     """
     #!/usr/bin/env bash
 
-    #bcftools filter -s 'LowQual' -i  'QUAL>=30 && AD[*:1]>=25' -g8 -G10 $bcf -o bcftools/fpg_filt.bcf
-    bcftools filter -s 'LowQual' -i  'QUAL>=30 && AD[*:1]>=25 && MQ>=30 && DP>=10' -g8 -G10 $bcf -o bcftools/fpg_filt.bcf
+    if ! [[ -d bcftools ]]; then mkdir bcftools; fi
+    
+    bcftools filter -s 'LowQual' -i  'QUAL>=30 && AD[*:1]>=25 && MQ>=30 && DP>=10' -g8 -G10 $bcf -o bcftools/fpg.filt.bcf
 
-    bcftools index bcftools/fpg_filt.bcf
+    bcftools index bcftools/fpg.filt.bcf
 
     """
 }
@@ -110,17 +111,21 @@ process BCFNORM {
 
 
    output:
-     path("bacftools/fpg.filt.norm.bcf"), emit: bcf_norm
-     path("bacftools/fpg.filt.norm.bcf.csi"), emit: idx_norm
+     path("bcftools/fpg.filt.norm.bcf"), emit: bcf_norm
+     path("bcftools/fpg.filt.norm.bcf.csi"), emit: idx_norm
+     path("bcftools/norm.log"), emit: log_norm
 
    script:
 
    """
    #!/usr/bin/env bash
-
-   bcftools norm -f $ref $bcf -o bacftools/fpg.filt.norm.bcf
    
-   bcftools index bacftools/fpg.filt.norm.bcf
+   if ! [[ -d bcftools ]]; then mkdir bcftools; fi
+   
+   bcftools norm -f $ref $bcf -o bcftools/fpg.filt.norm.bcf 2> bcftools/norm.log
+   
+   bcftools index bcftools/fpg.filt.norm.bcf
+
    """
 
 
@@ -141,18 +146,28 @@ process FILTERVCF {
 
 
    output:
-     path("bcftools/fpg_filt.norm.pass.bcf"), emit: bcf_pass
-     path("bcftools/fpg_filt.norm.pass.bcf.csi"), emit: idx_pass
+     path("bcftools/fpg.filt.norm.pass.bcf"), emit: bcf_pass
+     path("bcftools/fpg.filt.norm.pass.bcf.csi"), emit: idx_pass
+     path("bcftools/fpg.filt.norm.pass.vcf"), emit: vcf_pass
+    // path("bcftools/fpg.filt.norm.pass.vcf.tbi"), emit: tbi_pass
 
 
    script:
 
     """
     #!/usr/bin/env bash
+   
+    if ! [[ -d bcftools ]]; then mkdir bcftools; fi
+
+    #bcftools index $bcf
+ 
+    bcftools view -i 'FILTER="PASS"' $bcf -o bcftools/fpg.filt.norm.pass.bcf
     
-    bcftools view -i 'FILTER="PASS"' $bcf -o bcftools/fpg_filt.norm.pass.bcf
-    
-    bcftools index bcftools/fpg_filt.norm.pass.bcf
+    bcftools index bcftools/fpg.filt.norm.pass.bcf
+
+    # create vcf file n bgzip it
+    bcftools view -i 'FILTER="PASS"' -Ov -o bcftools/fpg.filt.norm.pass.vcf $bcf
+    #bcftools index -t bcftools/fpg.filt.norm.pass.vcf
 
     """
 }
@@ -166,13 +181,13 @@ process VCFSNPS2FASTA {
 
 
    input:
-     path(bcf)
-     path(idx)
+     path(vcf)
+     //path(idx)
 
 
    output:
      path("SNPfasta/fpg_snp_aln.fa"), emit: snp_msa
-     path("SNPfasta/fpg_filt.norm.pass.vcf"), emit: vcf_filt
+     //path("SNPfasta/fpg.filt.norm.pass.vcf"), emit: vcf_filt
      path("SNPfasta/vcf_infile"), emit: infile
 
 
@@ -183,11 +198,11 @@ process VCFSNPS2FASTA {
     
     if ! [[ -d SNPfasta ]]; then mkdir SNPfasta; fi   
 
-    bcftools view -i 'FILTER="PASS"' -Ov -o SNPfasta/fpg_filt.norm.pass.vcf \$bcf
+    #bcftools view -i 'FILTER="PASS"' -Ov -o SNPfasta/fpg.filt.norm.pass.vcf \$bcf
 
-    readlink -f SNPfasta/fpg_filt.norm.pass.vcf > SNPfasta/vcf_infile
+    readlink -f $vcf > SNPfasta/vcf_infile
 
-    python ./templates/broad-fungalgroup/scripts/SNPs/vcfSnpsToFasta.py --max_amb_samples 1 SNPfasta/vcf_infile > SNPfasta/fpg_snp_aln.fa
+    python $projectDir/templates/broad-fungalgroup/scripts/SNPs/vcfSnpsToFasta.py --max_amb_samples 1 SNPfasta/vcf_infile > SNPfasta/fpg_snp_aln.fa
     
     """
 
@@ -204,16 +219,16 @@ process VCF2PHYLIP {
 
 
    input:
-     path(bcf)
-     path(idx)
+     path(vcf)
+     //path(idx)
 
 
    output:
      path("vcf2phylip/vcfSNPs.min2.fasta"), emit: snp_aln
      path("vcf2phylip/vcfSNPs.min2.phy"), emit: phy
      path("vcf2phylip/vcfSNPs.min2.used_sites.tsv"), emit: sites
-     path("vcf2phylip/fpg_filt.norm.pass.vcf"), emit: vcf_filt
-
+    // path("vcf2phylip/fpg.filt.norm.pass.vcf"), emit: vcf_filt
+     path("vcf2phylip/vcfSNPs.min2.fold.fasta"), emit: fold_aln
 
    script:
 
@@ -222,9 +237,9 @@ process VCF2PHYLIP {
 
     if ! [[ -d vcf2phylip ]]; then mkdir vcf2phylip; fi
 
-    bcftools view  -i 'FILTER="PASS"' -Ov -o vcf2phylip/fpg_filt.norm.pass.vcf \$bcf
+    python $projectDir/templates/vcf2phylip.py -i $vcf -f -w --output-folder vcf2phylip --output-prefix vcfSNPs
 
-    python ./templates/vcf2phylip.py -i vcf2phylip/fpg_filt.norm.pass.vcf -f -w --output-folder vcf2phylip --output-prefix vcfSNPs
+    seqtk seq -Cl60 vcf2phylip/vcfSNPs.min2.fasta > vcf2phylip/vcfSNPs.min2.fold.fasta
 
     """
 }
@@ -234,33 +249,37 @@ process VCF2PHYLIP {
 workflow BCFTOOLS {
   take:
     fa
-    path(bam)
+    bam
 
   main:
      CALLVARIANTS(fa,bam)
-     INDEXBCF(CALLVARIANTS.out.vcfs)
-     SOFTFILTERVCF(CALLVARIANTS.out.vcfs,INDEXBCF.out.bcf_idx)
+     //INDEXBCF(CALLVARIANTS.out.vcfs)
+     SOFTFILTERVCF(CALLVARIANTS.out.vcfs,CALLVARIANTS.out.idx)
      BCFNORM(SOFTFILTERVCF.out.bcf_filt,SOFTFILTERVCF.out.idx_filt,fa) 
      FILTERVCF(BCFNORM.out.bcf_norm,BCFNORM.out.idx_norm)
-     VCFSNPS2FASTA(FILTERVCF.out.bcf_pass,FILTERVCF.out.idx_pass)
-     VCF2PHYLIP(FILTERVCF.out.bcf_pass,FILTERVCF.out.idx_pass)
+     VCFSNPS2FASTA(FILTERVCF.out.vcf_pass) //,FILTERVCF.out.tbi_pass)
+     VCF2PHYLIP(FILTERVCF.out.vcf_pass) //,FILTERVCF.out.tbi_pass)
 
   emit:
     bcf_raw = CALLVARIANTS.out.vcfs
-    bcf_rawIdx = INDEXBCF.out.bcf_idx
+    bcf_rawIdx = CALLVARIANTS.out.idx
     filt_bcf = SOFTFILTERVCF.out.bcf_filt
     filt_idx = SOFTFILTERVCF.out.idx_filt
     norm_bcf = BCFNORM.out.bcf_norm
-    norm_idx = BCFNORM.out.idx_norm
+    //norm_idx = BCFNORM.out.idx_norm
+    norm_log = BCFNORM.out.log_norm
     pass_bcf = FILTERVCF.out.bcf_pass
     pass_idx = FILTERVCF.out.idx_pass
+    pass_vcf = FILTERVCF.out.vcf_pass
+    //pass_tbi = FILTERVCF.out.tbi_pass
     msa_snp = VCFSNPS2FASTA.out.snp_msa
-    vcf_z = VCFSNPS2FASTA.out.vcf_filt
+    //vcf_z = VCFSNPS2FASTA.out.vcf_filt
     vcf_list = VCFSNPS2FASTA.out.infile
     aln_snp = VCF2PHYLIP.out.snp_aln
     aln_phy = VCF2PHYLIP.out.phy
     snp_sites = VCF2PHYLIP.out.sites
-    z_vcf = VCF2PHYLIP.out.vcf_filt
+    //z_vcf = VCF2PHYLIP.out.vcf_filt
+    aln_fold = VCF2PHYLIP.out.fold_aln
         
 
 }
@@ -268,8 +287,8 @@ workflow BCFTOOLS {
 
 
 workflow {
-
- BCFTOOLS()
+ bam_ch = Channel.fromPath("$params.resultsDir/align/picard/**marked.bam", checkIfExists: true).
+ BCFTOOLS(file("$params.refseq"),bam_ch.collect())
 
 }
 
