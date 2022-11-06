@@ -40,7 +40,7 @@ process CALLVARIANTS {
 }
 
 
-
+/*
 process INDEXBCF {
   
   conda "$params.cacheDir/fpgCallVariants"
@@ -64,7 +64,7 @@ process INDEXBCF {
 
 
 }
-
+*/
 
 
 process SOFTFILTERVCF {
@@ -155,14 +155,14 @@ process FILTERVCF {
     bcftools index bcftools/fpg_filt.norm.pass.bcf
 
     """
-}h
+}
 
 
 
 process VCFSNPS2FASTA {
 
    conda "$params.cacheDir/fpgVcf2FastaEnv"
-   publishDir "$params.vcfFa", mode: 'copy'
+   publishDir "$params.bcftl", mode: 'copy'
 
 
    input:
@@ -200,7 +200,7 @@ process VCFSNPS2FASTA {
 process VCF2PHYLIP {
 
    conda "$params.cacheDir/fpgCallVariants"
-   publishDir "$params.vcfFa", mode: 'copy'
+   publishDir "$params.bcftl", mode: 'copy'
 
 
    input:

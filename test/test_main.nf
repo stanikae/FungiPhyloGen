@@ -40,12 +40,22 @@ include { INDEXREF } from './test_indexRef.nf' addParams(refIndex: "$params.resu
 include { ALIGNBWAMEM } from './test_bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
 include { MARKDUPS } from './test_bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
 include { SAMINDEX } from './test_bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
+include { CALLVARIANTS } from './test_variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants") 
+include { INDEXBCF } from './test_variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
+include { SOFTFILTERVCF } from './test_variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
+include { BCFNORM } from './test_variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
+include { FILTERVCF } from './test_variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
+include { VCFSNPS2FASTA } from './test_variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
+include { VCF2PHYLIP } from './test_variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
+
+
+
 
 
 // load workflows
 include { trim } from './test_trimGalore.nf'
 include { ALN } from './test_bwaAlign.nf'
-
+include { BCFTOOLS } from './test_variantCalling.nf'
 
 // Run analysis
 workflow {
@@ -63,7 +73,8 @@ workflow {
   MASKREF(file("$params.refseq"),REPEATSBED.out.rpts_bed)
   INDEXREF(MASKREF.out.masked_fa)
   ALN(INDEXREF.out.prs,trim.out.rds)						// perform ref based mapping
-  MARKDUPS(ALN.out.bam) 
+  MARKDUPS(ALN.out.bam)
+  BCFTOOLS() 
   //MARKDUPS(ALN.out.bam
   //            .map { file -> def key = file.name.replaceAll(".bam","")
   //                     return tuple(key, file) } )
