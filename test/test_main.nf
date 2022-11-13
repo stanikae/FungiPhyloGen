@@ -21,6 +21,7 @@ params.bwaMem = file("$params.resultsDir/align")
 params.bcftl = file("$params.resultsDir/variants")
 params.iq = file("$params.resultsDir/iqtree")
 params.dist = file("$params.resultsDir/snpdists")
+params.ann = file("$params.resultsDir/snpeff")
 params.bcftl.mkdirs() ? ! params.bcftl.exists() : 'Directory already exists'
 params.iq.mkdirs() ? ! params.iq.exists() : 'Directory already exists'
 
@@ -55,7 +56,7 @@ include { VCFSNPS2FASTA } from './test_variantCalling.nf' addParams(bcftl: "$par
 include { VCF2PHYLIP } from './test_variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
 include { RUNIQTREE } from './test_phyloTrees.nf' addParams(iq: "$params.resultsDir/iqtree")
 include { RUNSNPDISTS } from './test_phyloTrees.nf' addParams(dist: "$params.resultsDir/snpdists")
-
+include { RUNSNPEFF } from './test_annotate.nf' addParams(dist: "$params.resultsDir/snpeff")
 
 
 
@@ -64,6 +65,8 @@ include { trim } from './test_trimGalore.nf'
 include { ALN } from './test_bwaAlign.nf'
 include { BCFTOOLS } from './test_variantCalling.nf'
 include { WFIQTREE } from './test_phyloTrees.nf'
+include { WFANNOTATESNP } from './test_annotate.nf'
+
 
 
 // Run analysis
@@ -85,7 +88,9 @@ workflow {
   MARKDUPS(ALN.out.bam)
   SAMINDEX(MARKDUPS.out.marked)
   BCFTOOLS(file("$params.refseq"),MARKDUPS.out.marked.collect())
-  WFIQTREE(BCFTOOLS.out.msa_snp)  
+  WFIQTREE(BCFTOOLS.out.msa_snp) 
+  WFANNOTATESNP(BCFTOOLS.out.pass_vcf,file("$params.refseq"),file("$params.gbk"))
+ 
   //MARKDUPS(ALN.out.bam
   //            .map { file -> def key = file.name.replaceAll(".bam","")
   //                     return tuple(key, file) } )

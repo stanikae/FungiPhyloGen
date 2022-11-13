@@ -36,7 +36,7 @@ process RUNIQTREE {
   
   pfx=`basename $projectDir`
 
-  iqtree -s $msa --prefix \$pfx -T AUTO -m GTR+F+ASC+R4 -o "reference" --threads-max 6
+  iqtree -s $msa --prefix \$pfx -T AUTO -m GTR+F+ASC+R4 -o "reference" --threads-max $params.threads 
  
   """
 
@@ -69,7 +69,7 @@ process RUNSNPDISTS {
 
   pfx=`basename $projectDir`
 
-  snp-dists -j 6 -c $msa > snpdists/\${pfx}.snpdist.csv
+  snp-dists -j $params.threads -c $msa > snpdists/\${pfx}.snpdist.csv
  
   if [[ -f "snpdists/\${pfx}.snpdist.csv" ]]; then
   	
