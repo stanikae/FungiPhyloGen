@@ -19,8 +19,10 @@ params.fqcCln = file("$params.resultsDir/fqc_clean")
 params.fqcCln.mkdirs() ? ! params.fqcCln.exists() : 'Directory already exists' 
 params.bwaMem = file("$params.resultsDir/align")
 params.bcftl = file("$params.resultsDir/variants")
+params.iq = file("$params.resultsDir/iqtree")
+params.dist = file("$params.resultsDir/snpdists")
 params.bcftl.mkdirs() ? ! params.bcftl.exists() : 'Directory already exists'
-
+params.iq.mkdirs() ? ! params.iq.exists() : 'Directory already exists'
 
 
 //params.flag = false
@@ -51,7 +53,8 @@ include { BCFNORM } from './test_variantCalling.nf' addParams(bcftl: "$params.re
 include { FILTERVCF } from './test_variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
 include { VCFSNPS2FASTA } from './test_variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
 include { VCF2PHYLIP } from './test_variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
-
+include { RUNIQTREE } from './test_phyloTrees.nf' addParams(iq: "$params.resultsDir/iqtree")
+include { RUNSNPDISTS } from './test_phyloTrees.nf' addParams(dist: "$params.resultsDir/snpdists")
 
 
 
@@ -60,6 +63,8 @@ include { VCF2PHYLIP } from './test_variantCalling.nf' addParams(bcftl: "$params
 include { trim } from './test_trimGalore.nf'
 include { ALN } from './test_bwaAlign.nf'
 include { BCFTOOLS } from './test_variantCalling.nf'
+include { WFIQTREE } from './test_phyloTrees.nf'
+
 
 // Run analysis
 workflow {
@@ -78,7 +83,9 @@ workflow {
   INDEXREF(MASKREF.out.masked_fa)
   ALN(INDEXREF.out.prs,trim.out.rds)						// perform ref based mapping
   MARKDUPS(ALN.out.bam)
-  BCFTOOLS(file("$params.refseq"),MARKDUPS.out.marked.collect()) 
+  SAMINDEX(MARKDUPS.out.marked)
+  BCFTOOLS(file("$params.refseq"),MARKDUPS.out.marked.collect())
+  WFIQTREE(BCFTOOLS.out.msa_snp)  
   //MARKDUPS(ALN.out.bam
   //            .map { file -> def key = file.name.replaceAll(".bam","")
   //                     return tuple(key, file) } )
@@ -88,7 +95,6 @@ workflow {
   //           return tuple(key, file)}
   //       )
   
-  SAMINDEX(MARKDUPS.out.marked)
 
 }
 

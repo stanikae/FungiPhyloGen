@@ -1,0 +1,10 @@
+name: fpgPhylogen
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - iqtree=2.2.0.3 
+  - rapidnj=2.3.2
+  - snp-dists=0.8.2
+  - pairsnp=0.3.1 
