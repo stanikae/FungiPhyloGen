@@ -1,9 +1,11 @@
-name: fpgMaskRepeats
+name: fpgVcf2FastaEnv
 channels:
   - anaconda
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - mummer=3.23
-  - bedtools=2.30.0
+  - scipy
+  - pip
+  - pip:
+      - numpy

@@ -1,9 +1,8 @@
-name: fpgMaskRepeats
+name: fpgvcfKit
 channels:
   - anaconda
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - mummer=3.23
-  - bedtools=2.30.0
+  - vcfkit=0.2.9

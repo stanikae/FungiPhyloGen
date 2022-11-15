@@ -7,7 +7,7 @@ channels:
 dependencies:
   - bwa=0.7.17
   - bowtie2=2.4.5
-  - multiqc=1.*
-  - seqfu=1.15.*
-  - samtools=1.16.*
+  - multiqc=1.13
+  - seqfu=1.16.0
+  - samtools=1.16.1
   - picard=2.27.4
