@@ -34,10 +34,10 @@ process RUNSNPEFF {
   if ! [[ -d snpeff ]]; then mkdir -p snpeff; fi
   
   
-  CONDA_BASE=\$(conda info --base)
+  CONDA_BASE="$params.cacheDir/fpgCallVariants"
   pfx=`basename $projectDir`
-  configPath=\$(find \${CONDA_BASE}/envs/*/share/* -maxdepth 1 -name "snpEff.config")
-  binDir=\$(dirname `find \${CONDA_BASE}/envs/*/share/* -name "snpEff.jar"`)
+  configPath=\$(find \${CONDA_BASE}/share/* -maxdepth 1 -name "snpEff.config")
+  binDir=\$(dirname `find \${CONDA_BASE}/share/* -name "snpEff.jar"`)
 
   # add ref and gbk to workdir
   if ! [[ -d snpeff/ref/genomes/ref ]]; then mkdir -p snpeff/ref/genomes/ref; fi

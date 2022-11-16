@@ -23,7 +23,7 @@ process trimReads {
   
   trim_galore -q 30 \
    --length 50 --trim-n -o "." --gzip \
-   --cores 2 --paired "$read1" "$read2" \
+   --cores 4 --paired "$read1" "$read2" \
    --no_report_file --basename "$sampleID"
  
   """

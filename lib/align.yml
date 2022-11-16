@@ -1,6 +1,5 @@
 name: fpgAlign
 channels:
-  - anaconda
   - conda-forge
   - bioconda
   - defaults
