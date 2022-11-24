@@ -1,12 +1,16 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-params.rawReads = "$params.inputDir/raw" 
-params.readsDir = Channel.fromPath("$params.rawReads/*.f*q.gz", checkIfExists: true)
-params.mqcOut = "$params.resultsDir/multiqc/raw"  //$params.mqcTyp"
-params.fqcOut = file("$params.resultsDir/fqc_raw")
 
-//params.fqcOut.mkdirs()
+//reads_ch = Channel.fromPath("$params.readsDir/**.f*q.gz", checkIfExists: true) 
+
+
+//params.readsDir = Channel.fromPath("$params.rawReads/**.f*q.gz", checkIfExists: true)
+//params.mqcOut = "$params.resultsDir/multiqc/raw"  //$params.mqcTyp"
+
+
+//params.fqcOut = file("$params.resultsDir/fqc_raw")
+
 
 params.threads = 2
 
@@ -25,41 +29,23 @@ process fqc {
     file cont
     file adp 
     path fq
+    //file fq
+   
 
   output:
-     path("*.html"), emit: fqc_out
-     path("*.zip"), emit: fqc_zip
-   
+    // path("*.html"), emit: fqc_out
+    // path("*.zip"), emit: fqc_zip
+   file "*"
 
   script:
   """
   #!/usr/bin/env bash
   THREADS=$params.threads
-  fastqc -o "." --contaminants "$cont" --adapters "$adp" --threads \$THREADS "$fq"
-  # fastqc -t 2 --outdir "." "$fq"
+  fastqc --contaminants "$cont" --adapters "$adp" --threads \$THREADS $fq
+  
   """
 }
 
-
-
-process mqc {
-  conda "$params.cacheDir/trimReads"
-  publishDir "$params.mqcOut", mode: 'copy'
-
-
-  input:
-    path fq
-
-
-  output:
-    path "multiqc_report.html", emit: mqc_raw
-
-
-  script:
-  """
-  multiqc -f --no-data-dir -o "." -d "$fq"
-  """
-}
 
 
 workflow qc_ind {
@@ -67,23 +53,17 @@ workflow qc_ind {
         cont
         adp
 	fq
-        fqq
     main:
-        fqc(cont, adp, fq)
-        mqc(fqq)
+       fqc(cont, adp, fq)
     emit:
-        mqc.out
+        fqc.out
 
 }
 
 
 workflow {
-    qc_ind(file("$contaminants"),file("$adapters"),Channel.fromPath("$params.rawReads/*.f*q.gz", checkIfExists: true),"$params.fqcOut")
-
+    qc_ind(file("$contaminants"),file("$adapters"),reads_ch)    
 }
-
-
-
 
 
 
