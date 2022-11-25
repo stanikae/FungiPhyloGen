@@ -11,12 +11,20 @@
 
 pathDir=$1
 outDir=$2
+#outFile=$outDir/sample_file2.csv
+
+if ! [[ -d $outDir ]]; then 
+	mkdir -p $outDir
+fi
+
+outFile=$outDir/histoSampleList.csv
 
 #  generate input file with header
-echo "sampleID,read1,read2" > $outDir/sample_file.csv 
+echo "sampleID,read1,read2" > $outFile
 
 for name in $(ls $pathDir | grep R1)
   do
-     nam=$(echo $name | cut -d_ -f1)
+     #nam=$(echo $name | cut -d_ -f1)
+     nam=$(echo $name | awk -F '_R{1,2}' '{print $1}')
      paste -d "," <(echo $nam) <(find $pathDir -name "${nam}*R1*fastq*") <(find $pathDir -name "${nam}*R2*fastq*")
-done >> $outDir/sample_file.csv
+done >> $outFile

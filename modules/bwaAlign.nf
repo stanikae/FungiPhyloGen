@@ -7,6 +7,9 @@ nextflow.enable.dsl=2
 process ALIGNBWAMEM {
   tag "$sampleId"
   
+  cpus 24
+  executor 'slurm'
+  
   conda "$params.cacheDir/fpgAlign"
   publishDir "$params.bwaMem", mode: 'copy'
 
@@ -27,10 +30,10 @@ process ALIGNBWAMEM {
 
   index=`find -L "$workDir" -name "*.bwt" | head -n1 | sed 's/.bwt//'`
  
-  bwa mem -M -t 5 \\
+  bwa mem -M -t ${task.cpus} \\
   \$index \\
   $reads \\
-  | samtools sort --threads $params.threads --output-fmt BAM -o bwa/${sampleId}.bam -
+  | samtools sort --threads ${task.cpus} --output-fmt BAM -o bwa/${sampleId}.bam -
 
   """
 }
@@ -38,6 +41,9 @@ process ALIGNBWAMEM {
 
 
 process MARKDUPS {
+
+  cpus 12
+  executor 'slurm'
   
   tag "$sampleId"
 
@@ -76,7 +82,10 @@ process MARKDUPS {
 
 
 process SAMINDEX {
-   tag "$bam"
+  tag "$bam"
+  
+  cpus 10
+  executor 'slurm'
 
   conda "$params.cacheDir/fpgAlign"
   publishDir "$params.bwaMem", mode: 'copy'
@@ -95,7 +104,7 @@ process SAMINDEX {
 
     if ! [[ -d picard ]]; then mkdir picard; fi
 
-    samtools index $bam -o picard/${bam}.bai
+    samtools index -@ ${task.cpus} $bam -o picard/${bam}.bai
 
   """
 

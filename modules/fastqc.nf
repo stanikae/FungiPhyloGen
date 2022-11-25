@@ -3,16 +3,10 @@ nextflow.enable.dsl=2
 
 
 //reads_ch = Channel.fromPath("$params.readsDir/**.f*q.gz", checkIfExists: true) 
-
-
 //params.readsDir = Channel.fromPath("$params.rawReads/**.f*q.gz", checkIfExists: true)
 //params.mqcOut = "$params.resultsDir/multiqc/raw"  //$params.mqcTyp"
-
-
 //params.fqcOut = file("$params.resultsDir/fqc_raw")
-
-
-params.threads = 2
+//params.threads = 2
 
 
 // fastqc contam and adapter files
@@ -22,6 +16,9 @@ adapters = "$params.cacheDir/trimReads/opt/fastqc*/Configuration/adapter_list.tx
 
 
 process fqc {
+  cpus 8
+  executor 'slurm'
+
   conda "$params.cacheDir/trimReads"
   publishDir "$params.fqcOut", mode: 'copy'
 
@@ -40,7 +37,7 @@ process fqc {
   script:
   """
   #!/usr/bin/env bash
-  THREADS=$params.threads
+  THREADS=${task.cpus} #//$params.threads
   fastqc --contaminants "$cont" --adapters "$adp" --threads \$THREADS $fq
   
   """
@@ -64,11 +61,6 @@ workflow qc_ind {
 workflow {
     qc_ind(file("$contaminants"),file("$adapters"),reads_ch)    
 }
-
-
-
-
-
 
 
 

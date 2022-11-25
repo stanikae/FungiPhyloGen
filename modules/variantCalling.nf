@@ -6,6 +6,9 @@ nextflow.enable.dsl=2
 
 process CALLVARIANTS {
  // tag "$sampleId"
+
+  cpus 24
+  executor 'slurm'
   
   conda "$params.cacheDir/fpgCallVariants"
   publishDir "$params.bcftl", mode: 'copy'
@@ -31,8 +34,8 @@ process CALLVARIANTS {
   if ! [[ -d bcftools ]]; then mkdir bcftools; fi
 
 
-  bcftools mpileup --threads $params.threads -a AD -Q 30 -f $ref $bam -Ou \\
-  | bcftools call --threads $params.threads --ploidy $params.ploidy -mv -Ob -o bcftools/fpg.call.bcf
+  bcftools mpileup --threads ${task.cpus} -a AD -Q 30 -f $ref $bam -Ou \\
+  | bcftools call --threads ${task.cpus} --ploidy $params.ploidy -mv -Ob -o bcftools/fpg.call.bcf
 
   bcftools index bcftools/fpg.call.bcf
 
@@ -72,6 +75,8 @@ process SOFTFILTERVCF {
    conda "$params.cacheDir/fpgCallVariants"
    publishDir "$params.bcftl", mode: 'copy'
 
+   cpus 24
+   executor 'slurm'
 
    input:
      path(bcf)
@@ -90,7 +95,7 @@ process SOFTFILTERVCF {
 
     if ! [[ -d bcftools ]]; then mkdir bcftools; fi
     
-    bcftools filter -s 'LowQual' -i  'QUAL>=30 && AD[*:1]>=25 && MQ>=30 && DP>=10' -g8 -G10 $bcf -o bcftools/fpg.filt.bcf
+    bcftools filter --threads ${task.cpus} -s 'LowQual' -i  'QUAL>=30 && AD[*:1]>=25 && MQ>=30 && DP>=10' -g8 -G10 $bcf -o bcftools/fpg.filt.bcf
 
     bcftools index bcftools/fpg.filt.bcf
 
@@ -100,6 +105,8 @@ process SOFTFILTERVCF {
 
 
 process BCFNORM {
+   cpus 24
+   executor 'slurm'
 
    conda "$params.cacheDir/fpgCallVariants"
    publishDir "$params.bcftl", mode: 'copy'
@@ -122,7 +129,7 @@ process BCFNORM {
    
    if ! [[ -d bcftools ]]; then mkdir bcftools; fi
    
-   bcftools norm -f $ref $bcf -o bcftools/fpg.filt.norm.bcf 2> bcftools/norm.log
+   bcftools norm --threads ${task.cpus} -f $ref $bcf -o bcftools/fpg.filt.norm.bcf 2> bcftools/norm.log
    
    bcftools index bcftools/fpg.filt.norm.bcf
 

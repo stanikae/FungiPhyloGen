@@ -2,11 +2,14 @@
 nextflow.enable.dsl=2
 
 params.trm = "$params.resultsDir/clean_reads"
-params.index = "$params.inputDir/sample_file.csv"
+//params.index = "$params.inputDir/sample_file.csv"
 //index = "$params.inputDir/sample_file.csv"
 //index = "/home/stan/git-repos/FungiPhyloGen/test/sample_file.csv"
 
 process trimReads {
+  cpus 6
+  executor 'slurm'
+
   conda "$params.cacheDir/trimReads"
   publishDir "$params.trm", mode: 'copy'
 
@@ -23,7 +26,7 @@ process trimReads {
   
   trim_galore -q 30 \
    --length 50 --trim-n -o "." --gzip \
-   --cores $params.threads --paired "$read1" "$read2" \
+   --cores ${task.cpus} --paired "$read1" "$read2" \
    --no_report_file --basename "$sampleID"
  
   """

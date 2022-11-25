@@ -4,7 +4,7 @@ nextflow.enable.dsl=2
 
 
 // Set parameters
-params.index = "$params.inputDir/sample_file.csv"
+//params.index = "$params.inputDir/sample_file.csv"
 params.rawReads = Channel.fromPath("$params.readsDir/**.f*q.gz", checkIfExists: true)
 params.trm = "$params.resultsDir/clean_reads"
 //params.prjName = "Test01"

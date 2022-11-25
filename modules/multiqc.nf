@@ -7,7 +7,7 @@ nextflow.enable.dsl=2
 //params.fqcOut = Channel.fromPath("$params.resultsDir/fqc_raw")
 //params.fqcOut = file("$params.resultsDir/fqc_raw") 
 
-params.threads = 2
+//params.threads = 2
 
 
 // fastqc contam and adapter files

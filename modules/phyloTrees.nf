@@ -6,6 +6,9 @@ nextflow.enable.dsl=2
 process RUNIQTREE {
  // tag "$sampleId"
 
+  cpus 16
+  executor 'slurm'
+
   conda "$params.cacheDir/fpgPhylogen"
   publishDir "$params.iq", mode: 'copy'
 
@@ -36,7 +39,7 @@ process RUNIQTREE {
   
   pfx=`basename $projectDir`
 
-  iqtree -s $msa --prefix \$pfx -T AUTO -m GTR+F+ASC+R4 -o "reference" --threads-max $params.threads 
+  iqtree -s $msa --prefix \$pfx -T AUTO -m GTR+F+ASC+R4 -o "reference" --threads-max ${task.cpus} 
  
   """
 
@@ -46,6 +49,9 @@ process RUNIQTREE {
 
 process RUNSNPDISTS {
  // tag "$sampleId"
+
+  cpus 12
+  executor 'slurm'
 
   conda "$params.cacheDir/fpgPhylogen"
   publishDir "$params.dist", mode: 'copy'
@@ -69,7 +75,7 @@ process RUNSNPDISTS {
 
   pfx=`basename $projectDir`
 
-  snp-dists -j $params.threads -c $msa > snpdists/\${pfx}.snpdist.csv
+  snp-dists -j ${task.cpus} -c $msa > snpdists/\${pfx}.snpdist.csv
  
   if [[ -f "snpdists/\${pfx}.snpdist.csv" ]]; then
   	
