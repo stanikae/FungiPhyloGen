@@ -6,6 +6,9 @@ nextflow.enable.dsl=2
 process RUNSNPEFF {
  // tag "$sampleId"
 
+  cpus 24
+  executor 'slurm'
+
   conda "$params.cacheDir/fpgCallVariants"
   publishDir "$params.ann", mode: 'copy'
 
@@ -76,6 +79,9 @@ process RUNSNPEFF {
 process RUNSNPDISTS {
  // tag "$sampleId"
 
+  cpus 24
+  executor 'slurm'
+
   conda "$params.cacheDir/fpgPhylogen"
   publishDir "$params.dist", mode: 'copy'
 
@@ -98,7 +104,7 @@ process RUNSNPDISTS {
 
   pfx=`basename $projectDir`
 
-  snp-dists -j 6 -c $msa > snpdists/\${pfx}.snpdist.csv
+  snp-dists -j ${task.cpus} -c $msa > snpdists/\${pfx}.snpdist.csv
  
   if [[ -f "snpdists/\${pfx}.snpdist.csv" ]]; then
   	

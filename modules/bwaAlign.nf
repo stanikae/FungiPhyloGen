@@ -7,7 +7,7 @@ nextflow.enable.dsl=2
 process ALIGNBWAMEM {
   tag "$sampleId"
   
-  cpus 24
+  cpus 8
   executor 'slurm'
   
   conda "$params.cacheDir/fpgAlign"

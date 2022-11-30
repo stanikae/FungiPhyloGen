@@ -7,7 +7,7 @@ params.trm = "$params.resultsDir/clean_reads"
 //index = "/home/stan/git-repos/FungiPhyloGen/test/sample_file.csv"
 
 process trimReads {
-  cpus 6
+  cpus 4
   executor 'slurm'
 
   conda "$params.cacheDir/trimReads"
