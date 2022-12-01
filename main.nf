@@ -5,12 +5,12 @@ nextflow.enable.dsl=2
 
 // Set parameters
 //params.index = "$params.inputDir/sample_file.csv"
-params.rawReads = Channel.fromPath("$params.readsDir/**.f*q.gz", checkIfExists: true)
+//params.rawReads = Channel.fromPath("$params.readsDir/**.f*q.gz", checkIfExists: true)
 params.trm = "$params.resultsDir/clean_reads"
 //params.prjName = "Test01"
 
 // channels
-reads_ch = Channel.fromPath("$params.readsDir/**.f*q.gz", checkIfExists: true)
+//reads_ch = Channel.fromPath("$params.readsDir/**.f*q.gz", checkIfExists: true)
 index_ch = Channel.fromPath(params.index, checkIfExists: true)
 
 
@@ -77,9 +77,9 @@ workflow {
   FASTQCRAW(file("$contaminants"),file("$adapters"), fq_ch)   				// fastqc on raw reads
   trim(index_ch)									// trimming raw reads
   //clean_ch = Channel.fromPath("$params.readsDir/**.f*q.gz", checkIfExists: true)
-  //FASTQCCLEAN(file("$contaminants"),file("$adapters"),trim.out.rds.collect())			// fastqc on clean reads
-  //MULTIQCRAW(FASTQCRAW.out.collect().unique())										// multiqc on raw reads
-  //MULTIQCCLEAN(FASTQCCLEAN.out.unique().collect())									// multiqc on clean reads
+  FASTQCCLEAN(file("$contaminants"),file("$adapters"),trim.out.rds.collect())			// fastqc on clean reads
+  MULTIQCRAW(FASTQCRAW.out.collect().unique())										// multiqc on raw reads
+  MULTIQCCLEAN(FASTQCCLEAN.out.unique().collect())									// multiqc on clean reads
   
   // prepare and index ref file
   GETREPEATS(file("$params.refseq"))

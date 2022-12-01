@@ -18,6 +18,7 @@ adapters = "$params.cacheDir/trimReads/opt/fastqc*/Configuration/adapter_list.tx
 process fqc {
   cpus 8
   executor 'slurm'
+  errorStrategy 'ignore'
 
   conda "$params.cacheDir/trimReads"
   publishDir "$params.fqcOut", mode: 'copy'

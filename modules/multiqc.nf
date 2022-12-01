@@ -17,6 +17,8 @@ nextflow.enable.dsl=2
 
 
 process mqc {
+  errorStrategy 'ignore'
+
   conda "$params.cacheDir/trimReads"
   publishDir "$params.mqcOut", mode: 'copy'
 
@@ -67,10 +69,10 @@ workflow qc_ind {
 
 
 workflow {
-    // dummy_ch = Channel.empty()
+    // // dummy_ch = Channel.empty()
     //qc_ind(file("$contaminants"),file("$adapters"),Channel.fromPath("$params.rawReads/*.f*q.gz", checkIfExists: true),"$params.fqcOut")
-    qc_ind(file("$contaminants"),file("$adapters"),Channel.fromPath("$params.rawReads/*.f*q.gz", checkIfExists: true))    
-    //qc_ind(file("$contaminants"),file("$adapters"),Channel.fromPath("$params.rawReads/*.f*q.gz", checkIfExists: true),dummy_ch)
+    // //qc_ind(file("$contaminants"),file("$adapters"),Channel.fromPath("$params.rawReads/*.f*q.gz", checkIfExists: true))    
+    // //qc_ind(file("$contaminants"),file("$adapters"),Channel.fromPath("$params.rawReads/*.f*q.gz", checkIfExists: true),dummy_ch)
 }
 */
 
