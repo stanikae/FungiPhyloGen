@@ -1,0 +1,13 @@
+name: fpgtrimReads
+channels:
+  - anaconda
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - fastqc=0.11.9
+  - trim-galore=0.6.7
+  - gzip=1.12
+  - trimmomatic=0.39
+  - multiqc=1.13
+  - seqfu=1.16.0
