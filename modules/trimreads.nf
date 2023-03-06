@@ -1,10 +1,6 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-params.trm = "$params.resultsDir/clean_reads"
-//params.index = "$params.inputDir/sample_file.csv"
-//index = "$params.inputDir/sample_file.csv"
-//index = "/home/stan/git-repos/FungiPhyloGen/test/sample_file.csv"
 
 process trimReads {
   cpus 6
@@ -32,6 +28,8 @@ process trimReads {
   """
 }
 
+
+
 workflow trim {
   take: infile
   main:
@@ -39,20 +37,4 @@ workflow trim {
   emit:
     rds = trimReads.out
 }
-
-
-workflow {
-   
-  trim(Channel.fromPath(params.index))
-
-
-}
-
-
-
-
-
-
-
-
 

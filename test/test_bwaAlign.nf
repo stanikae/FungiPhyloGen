@@ -30,7 +30,7 @@ process ALIGNBWAMEM {
   bwa mem -M -t 5 \\
   \$index \\
   $reads \\
-  | samtools sort --threads 5 --output-fmt BAM -o bwa/${sampleId}.bam -
+  | samtools sort --threads $params.threads --output-fmt BAM -o bwa/${sampleId}.bam -
 
   """
 }
