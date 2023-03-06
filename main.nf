@@ -5,13 +5,13 @@ nextflow.enable.dsl=2
 
 // Set parameters
 //params.index = "$params.inputDir/sample_file.csv"
-params.rawReads = Channel.fromPath("$params.readsDir/**.f*q.gz", checkIfExists: true)
+//params.rawReads = Channel.fromPath("$params.readsDir/**.f*q.gz", checkIfExists: true)
 params.trm = "$params.resultsDir/clean_reads"
 //params.prjName = "Test01"
 
 // channels
-reads_ch = Channel.fromPath("$params.readsDir/**.f*q.gz", checkIfExists: true)
-index_ch = Channel.fromPath(params.index)
+//reads_ch = Channel.fromPath("$params.readsDir/**.f*q.gz", checkIfExists: true)
+index_ch = Channel.fromPath(params.index, checkIfExists: true)
 
 
 // create directories - optional
@@ -72,12 +72,14 @@ include { WFANNOTATESNP } from './modules/annotate.nf'
 // Run analysis
 workflow {
 
-  FASTQCRAW(file("$contaminants"),file("$adapters"),reads_ch)   				// fastqc on raw reads
+  //FASTQCRAW(file("$contaminants"),file("$adapters"),reads_ch)
+  fq_ch = index_ch.splitCsv(header:true).map { row-> tuple(row.sampleID, file(row.read1), file(row.read2)) }
+  FASTQCRAW(file("$contaminants"),file("$adapters"), fq_ch)   				// fastqc on raw reads
   trim(index_ch)									// trimming raw reads
   //clean_ch = Channel.fromPath("$params.readsDir/**.f*q.gz", checkIfExists: true)
   FASTQCCLEAN(file("$contaminants"),file("$adapters"),trim.out.rds.collect())			// fastqc on clean reads
-  MULTIQCRAW(FASTQCRAW.out.collect())										// multiqc on raw reads
-  MULTIQCCLEAN(FASTQCCLEAN.out.collect())									// multiqc on clean reads
+  MULTIQCRAW(FASTQCRAW.out.collect().unique())										// multiqc on raw reads
+  MULTIQCCLEAN(FASTQCCLEAN.out.unique().collect())									// multiqc on clean reads
   
   // prepare and index ref file
   GETREPEATS(file("$params.refseq"))
@@ -87,7 +89,7 @@ workflow {
   ALN(INDEXREF.out.prs,trim.out.rds)						// perform ref based mapping
   MARKDUPS(ALN.out.bam)
   SAMINDEX(MARKDUPS.out.marked)
-  BCFTOOLS(file("$params.refseq"),MARKDUPS.out.marked.collect())
+  BCFTOOLS(file("$params.refseq"),MARKDUPS.out.marked.collect().unique())
   WFIQTREE(BCFTOOLS.out.msa_snp) 
   WFANNOTATESNP(BCFTOOLS.out.pass_vcf,file("$params.refseq"),file("$params.gbk"))
  

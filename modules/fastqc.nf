@@ -18,6 +18,7 @@ adapters = "$params.cacheDir/trimReads/opt/fastqc*/Configuration/adapter_list.tx
 process fqc {
   cpus 8
   executor 'slurm'
+  errorStrategy 'ignore'
 
   conda "$params.cacheDir/trimReads"
   publishDir "$params.fqcOut", mode: 'copy'
@@ -25,7 +26,8 @@ process fqc {
   input:
     file cont
     file adp 
-    path fq
+    tuple val(sampleID), file(read1), file(read2)
+    //path fq
     //file fq
    
 
@@ -37,8 +39,10 @@ process fqc {
   script:
   """
   #!/usr/bin/env bash
-  THREADS=${task.cpus} #//$params.threads
-  fastqc --contaminants "$cont" --adapters "$adp" --threads \$THREADS $fq
+  THREADS=${task.cpus} 
+  nam=\$(echo "$sampleID" | cut -d_ -f1-2 | tr "_" "-")
+  if ! [[ -d \$nam ]]; then mkdir -p \$nam ; fi
+  fastqc -o \$nam --contaminants "$cont" --adapters "$adp" --threads \$THREADS "$read1" "$read2"
   
   """
 }
@@ -59,7 +63,8 @@ workflow qc_ind {
 
 
 workflow {
-    qc_ind(file("$contaminants"),file("$adapters"),reads_ch)    
+    fq_ch = index_ch.splitCsv(header:true).map { row-> tuple(row.sampleID, file(row.read1), file(row.read2)) }
+    qc_ind(file("$contaminants"),file("$adapters"),fq_ch)    
 }
 
 
