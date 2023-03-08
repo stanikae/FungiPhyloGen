@@ -4,9 +4,9 @@ nextflow.enable.dsl=2
 
 /*
 //command to launch nextflow fpg-nf workflow
-refseq=~/test-data/ref-genomes/ncbi_dataset/data/GCA_000150115.1/GCA_000150115.1_ASM15011v1_genomic.fna
-gbk=~/test-data/ref-genomes/ncbi_dataset/data/GCA_000150115.1/genomic.gbff
-confg=~/histo-analysis/histo.config
+refseq=/scratch/sysuser/stanford/test-data/ref-genomes/ncbi_dataset/data/GCA_000150115.1/GCA_000150115.1_ASM15011v1_genomic.fna
+gbk=/scratch/sysuser/stanford/test-data/ref-genomes/ncbi_dataset/data/GCA_000150115.1/genomic.gbff
+confg=/scratch/sysuser/stanford/git-repos/FungiPhyloGen/fpg_test.config
 nextflow run main.nf --refseq $refseq --gbk $gbk --prjName "HistoAnalysis" -c $confg -with-conda true
 */
 
@@ -65,8 +65,6 @@ include { trimReads as TRIMREADS } from '../modules/trimreads.nf'
 include { fqc as FASTQCCLEAN } from '../modules/fastqc_test.nf' addParams(fqcOut: "$params.resultsDir/fqc_clean")
 include { mqc as MULTIQCRAW } from '../modules/multiqc.nf' addParams(mqcOut: "$params.resultsDir/multiqc/raw", fileN: "${params.prjName}_raw")
 include { mqc as MULTIQCCLEAN } from '../modules/multiqc.nf' addParams(mqcOut: "$params.resultsDir/multiqc/clean", fileN: "${params.prjName}_clean")
-
-/*
 include { GETREPEATS } from '../modules/indexref.nf'
 include { REPEATSBED } from '../modules/indexref.nf'
 include { MASKREF } from '../modules/indexref.nf' addParams(refMasked: "$params.resultsDir/masked")
@@ -84,8 +82,6 @@ include { VCF2PHYLIP } from '../modules/variantCalling.nf' addParams(bcftl: "$pa
 include { RUNIQTREE } from '../modules/phyloTrees.nf' addParams(iq: "$params.resultsDir/iqtree")
 include { RUNSNPDISTS } from '../modules/phyloTrees.nf' addParams(dist: "$params.resultsDir/snpdists")
 include { RUNSNPEFF } from '../modules/annotate.nf' addParams(dist: "$params.resultsDir/snpeff")
-*/
-
 
 
 
@@ -97,15 +93,10 @@ include { RUNSNPEFF } from '../modules/annotate.nf' addParams(dist: "$params.res
 
 
 include { trim } from '../modules/trimreads.nf'
-
-/*
 include { ALN } from '../modules/bwaAlign.nf'
 include { BCFTOOLS } from '../modules/variantCalling.nf'
 include { WFIQTREE } from '../modules/phyloTrees.nf'
 include { WFANNOTATESNP } from '../modules/annotate.nf'
-*/
-
-
 
 
 /*
@@ -121,19 +112,44 @@ workflow FUNGIPHYLOGEN {
   FASTQCRAW(file("$contaminants"),file("$adapters"),reads_ch)
 
 
- // trim reads using trim_galore
- trim(index_ch)
+  // trim reads using trim_galore
+  trim(index_ch)
 
  
- // run fastqc on clean reads
- FASTQCCLEAN(file("$contaminants"),file("$adapters"),trim.out.rds.collect())
+  // run fastqc on clean reads
+  FASTQCCLEAN(file("$contaminants"),file("$adapters"),trim.out.rds.collect())
 
 
- // run multiqc on raw reads
- MULTIQCRAW(FASTQCRAW.out.collect())
+  // run multiqc on raw reads
+  MULTIQCRAW(FASTQCRAW.out.collect())
 
- // run multiqc on clean reads
- MULTIQCCLEAN(FASTQCCLEAN.out.collect())
+  // run multiqc on clean reads
+  MULTIQCCLEAN(FASTQCCLEAN.out.collect())
+
+
+  // prepare and index ref file
+  GETREPEATS(file("$params.refseq"))
+  REPEATSBED(GETREPEATS.out.delta)
+  MASKREF(file("$params.refseq"),REPEATSBED.out.rpts_bed)
+  INDEXREF(MASKREF.out.masked_fa)
+
+
+  // perform ref based mapping
+  ALN(INDEXREF.out.prs,trim.out.rds)
+  MARKDUPS(ALN.out.bam)
+  SAMINDEX(MARKDUPS.out.marked)
+
+
+  // call and filter variants; convert vcf to MSA of variant sites only
+  BCFTOOLS(file("$params.refseq"),MARKDUPS.out.marked.collect())
+
+
+  // run iqtree
+  WFIQTREE(BCFTOOLS.out.msa_snp)
+
+  // perform snp annotations
+  WFANNOTATESNP(BCFTOOLS.out.pass_vcf,file("$params.refseq"),file("$params.gbk"))
+  
   
 }
 
