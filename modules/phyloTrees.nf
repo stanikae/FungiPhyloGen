@@ -88,6 +88,7 @@ process RUNSNPDISTS {
 }
 
 
+
 workflow WFIQTREE {
   take:
     aln
@@ -109,10 +110,10 @@ workflow WFIQTREE {
 
 
 
+/*
 workflow {
  WFIQTREE(file("$params.resultsDir/results/variants/SNPfasta/fpg_snp_aln.fa"))
 
 }
-
-
+*/
 

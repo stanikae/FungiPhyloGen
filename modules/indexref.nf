@@ -1,11 +1,6 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-//params.refIndex = "$params.resultsDir/index"
-//params.refMasked = "$params.resultsDir/masked" 
-//params.refMasked = "$params.resultsDir/masked"
-
-
 process GETREPEATS {
    conda "$params.cacheDir/fpgMaskRepeats"
   // publishDir "$params.refMasked", mode: 'copy'
@@ -118,13 +113,13 @@ process INDEXREF {
 }
 
 
-
+/*
 workflow {
   GETREPEATS(file("$params.refseq"))  
   REPEATSBED(GETREPEATS.out.delta)  
   MASKREF(file("$params.refseq"),REPEATSBED.out.rpts_bed)
   INDEXREF(MASKREF.out.masked_fa) 
 }
-
+*/
 
 

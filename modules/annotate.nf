@@ -141,11 +141,11 @@ workflow WFANNOTATESNP {
 }
 
 
-
+/*
 workflow {
  WFIQTREE(file("$params.resultsDir/results/variants/bcftools/fpg.filt.norm.pass.vcf"),file("$params.refseq"),file("$params.gbk"))
 
 }
 
-
+*/
 

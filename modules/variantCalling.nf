@@ -1,8 +1,6 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-//params.bwaMem = "$params.resultsDir/align"
-
 
 process CALLVARIANTS {
  // tag "$sampleId"
@@ -299,12 +297,12 @@ workflow BCFTOOLS {
 }
 
 
-
+/*
 workflow {
  bam_ch = Channel.fromPath("$params.resultsDir/align/picard/**marked.bam", checkIfExists: true).
  BCFTOOLS(file("$params.refseq"),bam_ch.collect())
 
 }
-
+*/
 
 

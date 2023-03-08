@@ -1,8 +1,6 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-//params.bwaMem = "$params.resultsDir/align"
-
 
 process ALIGNBWAMEM {
   tag "$sampleId"
@@ -83,6 +81,7 @@ process MARKDUPS {
 
 process SAMINDEX {
   tag "$bam"
+  //tag "$sampleId"
   
   cpus 10
   executor 'slurm'
@@ -116,8 +115,7 @@ workflow ALN {
   take:
     vl
     cln
-    //dups
-
+    
   main:
      ALIGNBWAMEM(vl,
        cln
@@ -125,34 +123,10 @@ workflow ALN {
              return tuple(key, file)}
           //.groupTuple( )
      )
-     //MARKDUPS(dups
-      //           .map { file -> def key = file.name.replaceAll(/.bam|.bai$/,'')
-      //                          return tuple(key, file) }
-      //   )
-
-
+     
   emit:
     bam = ALIGNBWAMEM.out.aln_bam
-    //markdup = MARKDUPS.out.marked
-    //dupmetric = MARKDUPS.out.dups_metric
-
+    
 }
-
-
-
-workflow {
-  idx_ch = Channel.fromPath("$projectDir/results/index/*.bwt", checkIfExists:true)
-  clean_ch = Channel.fromPath("$projectDir/results/clean_reads/*_{val_1,val_2}.fq.gz", checkIfExists:true)
-  ALN(idx_ch,clean_ch)
-  //MARKDUPS(ALN.out.bam | map { file -> def key = file.name.replaceAll(".bam","") 
-  //                             return tuple(key, file) } )
-  MARKDUPS(ALN.out.bam)
-  //            .map { file -> def key = file.name.toString().tokenize('.').get(0).replace('[','')
-  //           return tuple(key, file)}
-  //       )
-
-  SAMINDEX(MARKDUPS.out.marked)
-}
-
 
 
