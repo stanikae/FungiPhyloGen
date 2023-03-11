@@ -7,7 +7,7 @@ nextflow.enable.dsl=2
 refseq=/scratch/sysuser/stanford/test-data/ref-genomes/ncbi_dataset/data/GCA_000150115.1/GCA_000150115.1_ASM15011v1_genomic.fna
 gbk=/scratch/sysuser/stanford/test-data/ref-genomes/ncbi_dataset/data/GCA_000150115.1/genomic.gbff
 confg=/scratch/sysuser/stanford/git-repos/FungiPhyloGen/fpg_test.config
-nextflow run main.nf --refseq $refseq --gbk $gbk --prjName "HistoAnalysis" -c $confg -with-conda true
+nextflow run main_fpg.nf --refseq $refseq --gbk $gbk --prjName "HistoAnalysis" -c $confg -with-conda true
 */
 
 
@@ -39,8 +39,10 @@ params.bcftl = file("$params.resultsDir/variants")
 params.iq = file("$params.resultsDir/iqtree")
 params.dist = file("$params.resultsDir/snpdists")
 params.ann = file("$params.resultsDir/snpeff")
+params.deNovo = file("$params.resultsDir/assemblies")
 params.bcftl.mkdirs() ? ! params.bcftl.exists() : 'Directory already exists'
 params.iq.mkdirs() ? ! params.iq.exists() : 'Directory already exists'
+params.deNovo.mkdirs() ? ! params.deNovo.exists() : 'Directory already exists'
 //params.flag = false
 
 
@@ -69,6 +71,7 @@ include { GETREPEATS } from '../modules/indexref.nf'
 include { REPEATSBED } from '../modules/indexref.nf'
 include { MASKREF } from '../modules/indexref.nf' addParams(refMasked: "$params.resultsDir/masked")
 include { INDEXREF } from '../modules/indexref.nf' addParams(refIndex: "$params.resultsDir/index")
+include { SPADES } from '../modules/denovo.nf' addParams(deNovo: "$params.resultsDir/assemblies")
 include { ALIGNBWAMEM } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
 include { MARKDUPS } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
 include { SAMINDEX } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
@@ -97,6 +100,7 @@ include { ALN } from '../modules/bwaAlign.nf'
 include { BCFTOOLS } from '../modules/variantCalling.nf'
 include { WFIQTREE } from '../modules/phyloTrees.nf'
 include { WFANNOTATESNP } from '../modules/annotate.nf'
+include { DENOVO } from '../modules/denovo.nf'
 
 
 /*
@@ -149,44 +153,11 @@ workflow FUNGIPHYLOGEN {
 
   // perform snp annotations
   WFANNOTATESNP(BCFTOOLS.out.pass_vcf,file("$params.refseq"),file("$params.gbk"))
-  
-  
-}
 
-
-/*
-// Run analysis
-workflow {
-
-  FASTQCRAW(file("$contaminants"),file("$adapters"),reads_ch)   				// fastqc on raw reads
-  trim(index_ch)									// trimming raw reads
-  //clean_ch = Channel.fromPath("$params.readsDir/**.f*q.gz", checkIfExists: true)
-  FASTQCCLEAN(file("$contaminants"),file("$adapters"),trim.out.rds.collect())			// fastqc on clean reads
-  MULTIQCRAW(FASTQCRAW.out.collect())										// multiqc on raw reads
-  MULTIQCCLEAN(FASTQCCLEAN.out.collect())									// multiqc on clean reads
-  
-  // prepare and index ref file
-  GETREPEATS(file("$params.refseq"))
-  REPEATSBED(GETREPEATS.out.delta)
-  MASKREF(file("$params.refseq"),REPEATSBED.out.rpts_bed)
-  INDEXREF(MASKREF.out.masked_fa)
-  ALN(INDEXREF.out.prs,trim.out.rds)						// perform ref based mapping
-  MARKDUPS(ALN.out.bam)
-  SAMINDEX(MARKDUPS.out.marked)
-  BCFTOOLS(file("$params.refseq"),MARKDUPS.out.marked.collect())
-  WFIQTREE(BCFTOOLS.out.msa_snp) 
-  WFANNOTATESNP(BCFTOOLS.out.pass_vcf,file("$params.refseq"),file("$params.gbk"))
  
-  //MARKDUPS(ALN.out.bam
-  //            .map { file -> def key = file.name.replaceAll(".bam","")
-  //                     return tuple(key, file) } )
-
-  //MARKDUPS(ALN.out.bam
-  //            .map { file -> def key = file.name.toString().tokenize('.').get(0).replace('[','')
-  //           return tuple(key, file)}
-  //       )
+  // perform de novo ascsembly
+  DENOVO(trim.out.rds)  
   
-
 }
 
-*/
+

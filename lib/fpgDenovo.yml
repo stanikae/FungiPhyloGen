@@ -1,0 +1,7 @@
+name: fpgDenovo
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - spades=3.15.5

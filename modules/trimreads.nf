@@ -38,3 +38,4 @@ workflow trim {
     rds = trimReads.out
 }
 
+

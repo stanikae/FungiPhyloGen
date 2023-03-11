@@ -229,11 +229,11 @@ process VCF2PHYLIP {
 
 
    output:
-     path("vcf2phylip/vcfSNPs.min2.fasta"), emit: snp_aln
-     path("vcf2phylip/vcfSNPs.min2.phy"), emit: phy
-     path("vcf2phylip/vcfSNPs.min2.used_sites.tsv"), emit: sites
+     path("vcf2phylip/vcfSNPs.min1.fasta"), emit: snp_aln
+     path("vcf2phylip/vcfSNPs.min1.phy"), emit: phy
+     path("vcf2phylip/vcfSNPs.min1.used_sites.tsv"), emit: sites
      //path("vcf2phylip/fpg.filt.norm.pass.vcf"), emit: vcf_filt
-     path("vcf2phylip/vcfSNPs.min2.fold.fasta"), emit: fold_aln
+     path("vcf2phylip/vcfSNPs.min1.fold.fasta"), emit: fold_aln
 
    script:
 
@@ -241,16 +241,19 @@ process VCF2PHYLIP {
     #!/usr/bin/env bash
 
     if ! [[ -d vcf2phylip ]]; then mkdir vcf2phylip; fi
+  
+     mainPath=`echo "$projectDir"`
 
-    python $projectDir/templates/vcf2phylip.py -i $vcf -f -w --output-folder vcf2phylip --output-prefix vcfSNPs
+    \$mainPath/templates/vcf2phylip.py -i $vcf -f -w -m 1 --output-folder vcf2phylip --output-prefix vcfSNPs
 
-    if [[ -f "vcf2phylip/vcfSNPs.min2.fasta" ]]; then 
-	seqtk seq -Cl60 vcf2phylip/vcfSNPs.min2.fasta > vcf2phylip/vcfSNPs.min2.fold.fasta
+    if [[ -f "vcf2phylip/vcfSNPs.min1.fasta" ]]; then 
+	seqtk seq -Cl60 vcf2phylip/vcfSNPs.min1.fasta > vcf2phylip/vcfSNPs.min1.fold.fasta
+	
     else
-	echo ">no variants to process" > vcf2phylip/vcfSNPs.min2.fasta
-        echo ">no variants to process" > vcf2phylip/vcfSNPs.min2.phy
-        echo ">no variants to process" > vcf2phylip/vcfSNPs.min2.used_sites.tsv
-	echo ">no variants to process" > vcf2phylip/vcfSNPs.min2.fold.fasta
+	echo ">no variants to process" > vcf2phylip/vcfSNPs.min1.fasta
+        echo ">no variants to process" > vcf2phylip/vcfSNPs.min1.phy
+        echo ">no variants to process" > vcf2phylip/vcfSNPs.min1.used_sites.tsv
+	echo ">no variants to process" > vcf2phylip/vcfSNPs.min1.fold.fasta
     fi
 
     """
