@@ -30,7 +30,7 @@ include { FUNGIPHYLOGEN as FungiPhyloGen } from './workflows/fpg'
 //
 // WORKFLOW: Run main nf-FungiPhyloGen analysis pipeline
 //
-workflow NF_FUNGIPHYLOGEN {
+workflow FUNGIPHYLOGEN {
     FungiPhyloGen ()
 }
 
@@ -45,7 +45,7 @@ workflow NF_FUNGIPHYLOGEN {
 // main.nf adapted/modified from: https://github.com/nf-core/bactmap/blob/master/workflows/bactmap.nf
 //
 workflow {
-    NF_FUNGIPHYLOGEN ()
+    FUNGIPHYLOGEN ()
 }
 
 /*

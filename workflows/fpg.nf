@@ -77,6 +77,7 @@ include { MARKDUPS } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.re
 include { SAMINDEX } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
 include { CALLVARIANTS } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants") 
 //include { INDEXBCF } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
+include { REHEADERVCF } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
 include { SOFTFILTERVCF } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
 include { BCFNORM } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
 include { FILTERVCF } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
@@ -84,8 +85,7 @@ include { VCFSNPS2FASTA } from '../modules/variantCalling.nf' addParams(bcftl: "
 include { VCF2PHYLIP } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
 include { RUNIQTREE } from '../modules/phyloTrees.nf' addParams(iq: "$params.resultsDir/iqtree")
 include { RUNSNPDISTS } from '../modules/phyloTrees.nf' addParams(dist: "$params.resultsDir/snpdists")
-include { RUNSNPEFF } from '../modules/annotate.nf' addParams(dist: "$params.resultsDir/snpeff")
-
+include { RUNSNPEFF } from '../modules/annotate.nf' addParams(ann: "$params.resultsDir/snpeff")
 
 
 /*
@@ -151,12 +151,13 @@ workflow FUNGIPHYLOGEN {
   // run iqtree
   WFIQTREE(BCFTOOLS.out.msa_snp)
 
+
   // perform snp annotations
   WFANNOTATESNP(BCFTOOLS.out.pass_vcf,file("$params.refseq"),file("$params.gbk"))
+    
 
- 
   // perform de novo ascsembly
-  DENOVO(trim.out.rds)  
+  //DENOVO(trim.out.rds)  
   
 }
 

@@ -14,12 +14,10 @@ process CALLVARIANTS {
 
   input:
     //val ready
-    //tuple val(sampleId), file(bam)
     path(ref)
     path(bam)
 
   output:
-    //tuple val(sampleId), path("bcftools/*.bcf") , emit: vcfs
     path("bcftools/fpg.call.bcf"), emit: vcfs
     path("bcftools/fpg.call.bcf.csi"), emit: idx
 
@@ -39,6 +37,44 @@ process CALLVARIANTS {
 
   """
 }
+
+
+
+process REHEADERVCF {
+// tag "$sampleId"
+
+  cpus 8
+  executor 'slurm'
+
+  conda "$params.cacheDir/fpgCallVariants"
+  publishDir "$params.bcftl", mode: 'copy'
+
+
+  input:
+    path(bcf)
+    path(idx)
+
+  output:
+    path("bcftools/fpg.call.reheader.bcf"), emit: reh_bcf
+    path("bcftools/fpg.call.reheader.bcf.csi"), emit: reh_idx
+
+  script:
+
+
+  """
+  #!/usr/bin/env bash
+
+  if ! [[ -d bcftools ]]; then mkdir bcftools; fi
+
+  # rehead (rename) samples i.e. remove paths and suffix
+  paste -d "\t" <(bcftools query -l "$bcf") <(bcftools query -l "$bcf" | sed 's/\\/.*\\///' | sed 's/_sorted.*//') > ./reheader.txt
+  bcftools reheader -s ./reheader.txt -o bcftools/fpg.call.reheader.bcf "$bcf"
+
+  bcftools index bcftools/fpg.call.reheader.bcf  
+ 
+  """
+}
+
 
 
 /*
@@ -232,7 +268,6 @@ process VCF2PHYLIP {
      path("vcf2phylip/vcfSNPs.min1.fasta"), emit: snp_aln
      path("vcf2phylip/vcfSNPs.min1.phy"), emit: phy
      path("vcf2phylip/vcfSNPs.min1.used_sites.tsv"), emit: sites
-     //path("vcf2phylip/fpg.filt.norm.pass.vcf"), emit: vcf_filt
      path("vcf2phylip/vcfSNPs.min1.fold.fasta"), emit: fold_aln
 
    script:
@@ -269,7 +304,8 @@ workflow BCFTOOLS {
   main:
      CALLVARIANTS(fa,bam)
      //INDEXBCF(CALLVARIANTS.out.vcfs)
-     SOFTFILTERVCF(CALLVARIANTS.out.vcfs,CALLVARIANTS.out.idx)
+     REHEADERVCF(CALLVARIANTS.out.vcfs,CALLVARIANTS.out.idx)
+     SOFTFILTERVCF(REHEADERVCF.out.reh_bcf,REHEADERVCF.out.reh_idx)
      BCFNORM(SOFTFILTERVCF.out.bcf_filt,SOFTFILTERVCF.out.idx_filt,fa) 
      FILTERVCF(BCFNORM.out.bcf_norm,BCFNORM.out.idx_norm)
      VCFSNPS2FASTA(FILTERVCF.out.vcf_pass) //,FILTERVCF.out.tbi_pass)
@@ -278,6 +314,8 @@ workflow BCFTOOLS {
   emit:
     bcf_raw = CALLVARIANTS.out.vcfs
     bcf_rawIdx = CALLVARIANTS.out.idx
+    bcf_reh = REHEADERVCF.out.reh_bcf
+    bcf_rehIdx = REHEADERVCF.out.reh_idx
     filt_bcf = SOFTFILTERVCF.out.bcf_filt
     filt_idx = SOFTFILTERVCF.out.idx_filt
     norm_bcf = BCFNORM.out.bcf_norm
@@ -298,14 +336,4 @@ workflow BCFTOOLS {
         
 
 }
-
-
-/*
-workflow {
- bam_ch = Channel.fromPath("$params.resultsDir/align/picard/**marked.bam", checkIfExists: true).
- BCFTOOLS(file("$params.refseq"),bam_ch.collect())
-
-}
-*/
-
 
