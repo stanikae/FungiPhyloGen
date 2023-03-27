@@ -25,13 +25,13 @@ nextflow.enable.dsl = 2
 ========================================================================================
 */
 
-include { FUNGIPHYLOGEN as FungiPhyloGen } from './workflows/fpg'
+include { FUNGIPHYLOGEN as FPG } from './workflows/fpg'
 
 //
 // WORKFLOW: Run main nf-FungiPhyloGen analysis pipeline
 //
 workflow FUNGIPHYLOGEN {
-    FungiPhyloGen ()
+    FPG ()
 }
 
 /*

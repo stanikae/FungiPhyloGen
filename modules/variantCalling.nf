@@ -3,6 +3,47 @@ nextflow.enable.dsl=2
 
 
 process CALLVARIANTS {
+
+  cpus 8
+  executor 'slurm'
+
+  //tag "$sampleId"
+
+  conda "$params.cacheDir/fpgCallVariants"
+  publishDir "$params.bcftl", mode: 'copy'
+
+  input:
+    path(ref)
+    path(bam)
+    //path(idx)
+    //tuple val(sampleId), file(bam)
+
+
+  output:
+     path('*call.bcf'), emit: bcf
+     path('*call.bcf.csi'), emit: bcf_idx
+
+  script:
+
+  """
+   #!/usr/bin/env bash
+   
+   dirNam=`basename -s _sorted_marked.bam "$bam"`
+   #if ! [[ -d \$dirNam ]]; then mkdir \$dirNam; fi
+
+   
+   bcftools mpileup --threads ${task.cpus} -a AD -Q 30 -f $ref $bam -Ou \\
+   | bcftools call --threads ${task.cpus} --ploidy $params.ploidy -mv -Ob -o \${dirNam}_call.bcf
+
+   bcftools index \${dirNam}_call.bcf
+
+  """
+}
+
+
+
+/*
+process CALLVARIANTSgrp {
  // tag "$sampleId"
 
   cpus 24
@@ -37,6 +78,46 @@ process CALLVARIANTS {
 
   """
 }
+*/
+
+
+
+
+
+process BCFMERGE {
+  
+  cpus 24
+  executor 'slurm'
+
+  conda "$params.cacheDir/fpgCallVariants"
+  publishDir "$params.bcftl", mode: 'copy'
+
+
+  input:
+    path(bcf)
+    path(idx)
+
+  output:
+    path("bcfmerge/fpg.call.bcf"), emit: mge
+    path("bcfmerge/fpg.call.bcf.csi"), emit: mge_idx
+
+
+  script:
+
+  """
+  #!/usr/bin/env bash
+
+  if ! [[ -d bcfmerge ]]; then mkdir bcfmerge; fi
+
+
+  bcftools merge $bcf --threads ${task.cpus} -Ob -o bcfmerge/fpg.call.bcf
+  bcftools index bcfmerge/fpg.call.bcf
+ 
+ 
+ """
+
+}
+
 
 
 
@@ -296,15 +377,49 @@ process VCF2PHYLIP {
 
 
 
+/*
+workflow BCFTOOLS {
+    take:
+      fa
+      bam_in
+
+    main:
+
+        CALLVARIANTS (fa,bam_in.
+                        map { it -> def key = it.name.toString().tokenize('_').get(0).replace('[','')
+                                return tuple(key, file(it[0])) }
+                        //.groupTuple()
+                        .view()
+       )
+    //emit:
+     //cor = SPADES.out.cor
+     //scaf = SPADES.out.scaf
+     //ctg = SPADES.out.ctg
+     //scaf_gfa = SPADES.out.scaf_gfa
+     //ctg_path = SPADES.out.ctg_path
+     //scaf_path = SPADES.out.scaf_path
+}
+*/
+
+
+
+
 workflow BCFTOOLS {
   take:
     fa
     bam
 
   main:
+     //CALLVARIANTSgrp(fa,bam)
+     // //INDEXBCF(CALLVARIANTS.out.vcfs)
      CALLVARIANTS(fa,bam)
-     //INDEXBCF(CALLVARIANTS.out.vcfs)
-     REHEADERVCF(CALLVARIANTS.out.vcfs,CALLVARIANTS.out.idx)
+     //CALLVARIANTS(fa,bam.
+     //			 map { file -> def key = file.name.toString().tokenize('_').get(0).replace('[','')
+     //        			return tuple(key, file)} 
+     //)
+     BCFMERGE(CALLVARIANTS.out.bcf.collect(),CALLVARIANTS.out.bcf_idx.collect())
+     REHEADERVCF(BCFMERGE.out.mge,BCFMERGE.out.mge_idx)
+     //REHEADERVCF(CALLVARIANTSgrp.out.vcfs,CALLVARIANTSgrp.out.idx)
      SOFTFILTERVCF(REHEADERVCF.out.reh_bcf,REHEADERVCF.out.reh_idx)
      BCFNORM(SOFTFILTERVCF.out.bcf_filt,SOFTFILTERVCF.out.idx_filt,fa) 
      FILTERVCF(BCFNORM.out.bcf_norm,BCFNORM.out.idx_norm)
@@ -312,8 +427,12 @@ workflow BCFTOOLS {
      VCF2PHYLIP(FILTERVCF.out.vcf_pass) //,FILTERVCF.out.tbi_pass)
 
   emit:
-    bcf_raw = CALLVARIANTS.out.vcfs
-    bcf_rawIdx = CALLVARIANTS.out.idx
+    //bcf_raw = CALLVARIANTSgrp.out.vcfs
+    //bcf_idx = CALLVARIANTSgrp.out.idx
+    bcf_ind = CALLVARIANTS.out.bcf
+    bcf_rawIdx = CALLVARIANTS.out.bcf_idx
+    bcf_mge = BCFMERGE.out.mge
+    bcf_idx = BCFMERGE.out.mge_idx
     bcf_reh = REHEADERVCF.out.reh_bcf
     bcf_rehIdx = REHEADERVCF.out.reh_idx
     filt_bcf = SOFTFILTERVCF.out.bcf_filt

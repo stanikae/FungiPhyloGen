@@ -76,6 +76,7 @@ include { ALIGNBWAMEM } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params
 include { MARKDUPS } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
 include { SAMINDEX } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
 include { CALLVARIANTS } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants") 
+//include { CALLVARIANTSgrp } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
 //include { INDEXBCF } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
 include { REHEADERVCF } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
 include { SOFTFILTERVCF } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
@@ -125,10 +126,10 @@ workflow FUNGIPHYLOGEN {
 
 
   // run multiqc on raw reads
-  MULTIQCRAW(FASTQCRAW.out.collect())
+ // MULTIQCRAW(FASTQCRAW.out.collect())
 
   // run multiqc on clean reads
-  MULTIQCCLEAN(FASTQCCLEAN.out.collect())
+ // MULTIQCCLEAN(FASTQCCLEAN.out.collect())
 
 
   // prepare and index ref file
@@ -145,7 +146,8 @@ workflow FUNGIPHYLOGEN {
 
 
   // call and filter variants; convert vcf to MSA of variant sites only
-  BCFTOOLS(file("$params.refseq"),MARKDUPS.out.marked.collect())
+  //BCFTOOLS(file("$params.refseq"),MARKDUPS.out.marked.collect())
+  BCFTOOLS(file("$params.refseq"),MARKDUPS.out.marked)
 
 
   // run iqtree
