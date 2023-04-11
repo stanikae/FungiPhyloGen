@@ -210,7 +210,8 @@ process SOFTFILTERVCF {
 
     if ! [[ -d bcftools ]]; then mkdir bcftools; fi
     
-    bcftools filter --threads ${task.cpus} -s 'LowQual' -i  'QUAL>=30 && AD[*:1]>=25 && MQ>=30 && DP>=10' -g8 -G10 $bcf -o bcftools/fpg.filt.bcf
+    bcftools view -v 'snps' --threads ${task.cpus} $bcf | \\
+     bcftools filter --threads ${task.cpus} -s 'LowQual' -i  'QUAL>=30 && AD[*:1]>=25 && MQ>=30 && DP>=10 && F_MISSING<0.9' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
 
     bcftools index bcftools/fpg.filt.bcf
 
@@ -257,6 +258,9 @@ process BCFNORM {
 
 
 process FILTERVCF {
+ 
+   cpus 16
+   executor 'slurm'
 
    conda "$params.cacheDir/fpgCallVariants"
    publishDir "$params.bcftl", mode: 'copy'
@@ -272,6 +276,7 @@ process FILTERVCF {
      path("bcftools/fpg.filt.norm.pass.bcf.csi"), emit: idx_pass
      path("bcftools/fpg.filt.norm.pass.vcf"), emit: vcf_pass
     // path("bcftools/fpg.filt.norm.pass.vcf.tbi"), emit: tbi_pass
+     path("bcftools/fpg.sampleList.txt"), emit: sample_list
 
 
    script:
@@ -283,13 +288,17 @@ process FILTERVCF {
 
     #bcftools index $bcf
  
-    bcftools view -i 'FILTER="PASS"' $bcf -o bcftools/fpg.filt.norm.pass.bcf
+    bcftools view --threads ${task.cpus} -i 'FILTER="PASS"' $bcf -Ob -o bcftools/fpg.filt.norm.pass.bcf
     
     bcftools index bcftools/fpg.filt.norm.pass.bcf
 
     # create vcf file n bgzip it
-    bcftools view -i 'FILTER="PASS"' -Ov -o bcftools/fpg.filt.norm.pass.vcf $bcf
+    bcftools view --threads ${task.cpus} -i 'FILTER="PASS"' -Ov -o bcftools/fpg.filt.norm.pass.vcf $bcf
     #bcftools index -t bcftools/fpg.filt.norm.pass.vcf
+    
+    # get count of samples in bcf file
+    bcftools query --list-samples bcftools/fpg.filt.norm.pass.bcf > bcftools/fpg.sampleList.txt
+
 
     """
 }
@@ -304,6 +313,7 @@ process VCFSNPS2FASTA {
 
    input:
      path(vcf)
+     path(fpg)
      //path(idx)
 
 
@@ -320,11 +330,12 @@ process VCFSNPS2FASTA {
     
     if ! [[ -d SNPfasta ]]; then mkdir SNPfasta; fi   
 
-    #bcftools view -i 'FILTER="PASS"' -Ov -o SNPfasta/fpg.filt.norm.pass.vcf \$bcf
-
+    
     readlink -f $vcf > SNPfasta/vcf_infile
+    nsamples=\$(cat "$fpg" | wc -l)
+    amb_samples=`awk "BEGIN {print (\$nsamples/100)*10}"`
 
-    python $projectDir/templates/broad-fungalgroup/scripts/SNPs/vcfSnpsToFasta.py --max_amb_samples 1 SNPfasta/vcf_infile > SNPfasta/fpg_snp_aln.fa
+    python $projectDir/templates/broad-fungalgroup/scripts/SNPs/vcfSnpsToFasta.py --max_amb_samples \$amb_samples SNPfasta/vcf_infile > SNPfasta/fpg_snp_aln.fa
     
     """
 
@@ -377,32 +388,6 @@ process VCF2PHYLIP {
 
 
 
-/*
-workflow BCFTOOLS {
-    take:
-      fa
-      bam_in
-
-    main:
-
-        CALLVARIANTS (fa,bam_in.
-                        map { it -> def key = it.name.toString().tokenize('_').get(0).replace('[','')
-                                return tuple(key, file(it[0])) }
-                        //.groupTuple()
-                        .view()
-       )
-    //emit:
-     //cor = SPADES.out.cor
-     //scaf = SPADES.out.scaf
-     //ctg = SPADES.out.ctg
-     //scaf_gfa = SPADES.out.scaf_gfa
-     //ctg_path = SPADES.out.ctg_path
-     //scaf_path = SPADES.out.scaf_path
-}
-*/
-
-
-
 
 workflow BCFTOOLS {
   take:
@@ -423,7 +408,7 @@ workflow BCFTOOLS {
      SOFTFILTERVCF(REHEADERVCF.out.reh_bcf,REHEADERVCF.out.reh_idx)
      BCFNORM(SOFTFILTERVCF.out.bcf_filt,SOFTFILTERVCF.out.idx_filt,fa) 
      FILTERVCF(BCFNORM.out.bcf_norm,BCFNORM.out.idx_norm)
-     VCFSNPS2FASTA(FILTERVCF.out.vcf_pass) //,FILTERVCF.out.tbi_pass)
+     VCFSNPS2FASTA(FILTERVCF.out.vcf_pass,FILTERVCF.out.sample_list) //,FILTERVCF.out.tbi_pass)
      VCF2PHYLIP(FILTERVCF.out.vcf_pass) //,FILTERVCF.out.tbi_pass)
 
   emit:
