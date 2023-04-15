@@ -126,10 +126,10 @@ workflow FUNGIPHYLOGEN {
 
 
   // run multiqc on raw reads
- // MULTIQCRAW(FASTQCRAW.out.collect())
+  MULTIQCRAW(FASTQCRAW.out.collect())
 
   // run multiqc on clean reads
- // MULTIQCCLEAN(FASTQCCLEAN.out.collect())
+  MULTIQCCLEAN(FASTQCCLEAN.out.collect())
 
 
   // prepare and index ref file
