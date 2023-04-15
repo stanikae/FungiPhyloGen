@@ -333,7 +333,7 @@ process VCFSNPS2FASTA {
     
     readlink -f $vcf > SNPfasta/vcf_infile
     nsamples=\$(cat "$fpg" | wc -l)
-    amb_samples=`awk "BEGIN {print (\$nsamples/100)*10}"`
+    amb_samples=`echo \$(( \$nsamples/100*10 ))`   #// `awk "BEGIN {print (\$nsamples/100)*10}"`
 
     python $projectDir/templates/broad-fungalgroup/scripts/SNPs/vcfSnpsToFasta.py --max_amb_samples \$amb_samples SNPfasta/vcf_infile > SNPfasta/fpg_snp_aln.fa
     
