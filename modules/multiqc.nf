@@ -9,7 +9,8 @@ process mqc {
 
   input:
    // path fq
-   file fq
+   //file fq
+   path(fq, stageAs: "?/*")
 
   output:
    //path "multiqc_report.html", emit: mqc_raw
