@@ -6,20 +6,13 @@
 # Date: 2020-10-08
 # Modified: 2022-11-16
 ################################################
+
 # Notes:
 # pathDir ==> Absolute path to paired-end reads directory
 # outFile ==> Absolute path to output file
 
 pathDir=$1
 outFile=$2
-#outDir=$2
-#outFile=$outDir/sample_file2.csv
-
-#if ! [[ -d $outDir ]]; then 
-#	mkdir -p $outDir
-#fi
-
-#outFile=$outDir/histoSampleList.csv
 
 #  generate input file with header
 echo "sampleID,read1,read2" > $outFile

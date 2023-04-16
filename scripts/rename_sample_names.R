@@ -1,20 +1,26 @@
 #!/usr/bin/env Rscript
 
-# library(tidyverse)
-# library(readxl)
-# library(ComplexHeatmap)
-# library(PCAtools)
-# library(ggplot2)
-# library(colorRamp2)
-# library(ggalt)
 # date_var <- as.Date(date(), format = "%a %b %d %H:%M:%S %Y")
 
+###########################################################################
+# Written by: Stan Kwenda
+# Date: 2023-03-27
+#
+# Script to to rename input fastq files 
+# 1. The nf-FungiPhylogen workflow splits fastq files on the first underscore to get sampleID 
+# 2. This script replaces underscores (_) with dashes (-) in sampleIDs and renames the fastq files
+# 3. It is recommended to run this script before launcihing the nf-FungiPhylogen workflow to avoid 
+#    getting unexpected results or errors about duplicate sampleIDs
+#
+# This script only takes one input file, samplesheet, created by the precursor script: createSampleInputFile.sh provided together with this script in the scripts directory 
+# It's important to rerun createSampleInputFile.sh after renaming fastq files to create the final sample shaeet
+
+###########################################################################
 args <- commandArgs(TRUE)
 print(args[1])
 
 # Data load ---------------------------------------------------------------
 filepath <- file.path(args[1])
-# filepath <- file.path("D:/Terra-Informatix/Rutendo-CHARM/histoSampleList_edt.csv")
 outDir <- dirname(filepath)
 filename <- paste0(sub('\\..*$', '',  basename(filepath)),"_new.csv")
 outpath <- file.path(paste(outDir,filename,sep = "/"))
