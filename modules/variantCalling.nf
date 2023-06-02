@@ -211,7 +211,9 @@ process SOFTFILTERVCF {
     if ! [[ -d bcftools ]]; then mkdir bcftools; fi
     
     bcftools view -v 'snps' --threads ${task.cpus} $bcf | \\
-     bcftools filter --threads ${task.cpus} -s 'LowQual' -i  'QUAL>=30 && AD[*:1]>=25 && MQ>=30 && DP>=10 && F_MISSING<0.9' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
+     bcftools filter --threads ${task.cpus} -s 'LowQual' -i  'QUAL>=30 && AD[*:1]>=25 && DP>=10' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
+
+    #// && MQ>=30 && F_MISSING<0.9
 
     bcftools index bcftools/fpg.filt.bcf
 
@@ -333,7 +335,7 @@ process VCFSNPS2FASTA {
     
     readlink -f $vcf > SNPfasta/vcf_infile
     nsamples=\$(cat "$fpg" | wc -l)
-    amb_samples=`echo \$(( \$nsamples/100*10 ))`   #// `awk "BEGIN {print (\$nsamples/100)*10}"`
+    amb_samples=`awk "BEGIN {print (\$nsamples/100)*10}" | awk '{ print int(\$1) }'`  #// `echo \$(( \$nsamples/100*10 ))`   #// `awk "BEGIN {print (\$nsamples/100)*10}"`
 
     python $projectDir/templates/broad-fungalgroup/scripts/SNPs/vcfSnpsToFasta.py --max_amb_samples \$amb_samples SNPfasta/vcf_infile > SNPfasta/fpg_snp_aln.fa
     
