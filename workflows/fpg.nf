@@ -74,6 +74,7 @@ include { INDEXREF } from '../modules/indexref.nf' addParams(refIndex: "$params.
 include { SPADES } from '../modules/denovo.nf' addParams(deNovo: "$params.resultsDir/assemblies")
 include { ALIGNBWAMEM } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
 include { MARKDUPS } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
+include { SORTMARKED } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
 include { SAMINDEX } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
 include { CALLVARIANTS } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants") 
 //include { CALLVARIANTSgrp } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
@@ -142,12 +143,13 @@ workflow FUNGIPHYLOGEN {
   // perform ref based mapping
   ALN(INDEXREF.out.prs,trim.out.rds)
   MARKDUPS(ALN.out.bam)
-  SAMINDEX(MARKDUPS.out.marked)
+  SORTMARKED(MARKDUPS.out.marked)
+  SAMINDEX(SORTMARKED.out.sorted)
 
 
   // call and filter variants; convert vcf to MSA of variant sites only
-  //BCFTOOLS(file("$params.refseq"),MARKDUPS.out.marked.collect())
-  BCFTOOLS(file("$params.refseq"),MARKDUPS.out.marked)
+  //BCFTOOLS(file("$params.refseq"),SORTMARKED.out.sorted.collect())
+  BCFTOOLS(file("$params.refseq"),SORTMARKED.out.sorted)
 
 
   // run iqtree

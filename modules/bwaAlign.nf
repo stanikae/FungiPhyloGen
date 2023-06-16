@@ -56,25 +56,55 @@ process MARKDUPS {
     //tuple val(sampleId), path("picard/*marked.bam"), emit: marked
     //tuple val(sampleId), path("picard/*_metrics.txt"), emit: dups_metric
 
-      path('picard/*marked.bam'), emit: marked
-      path('picard/*_metrics.txt'), emit: dups_metric      
+      tuple val(sampleId), path('*marked.bam'), emit: marked
+      path('*_metrics.txt'), emit: dups_metric      
      
   script:
 
   """ 
    #!/usr/bin/env bash
    
-    if ! [[ -d picard ]]; then mkdir picard; fi
  
    picard MarkDuplicates \\
    --INPUT $bam \\
-   --OUTPUT picard/${sampleId}_sorted_marked.bam \\
-   --METRICS_FILE picard/${sampleId}_metrics.txt \\
+   --OUTPUT ${sampleId}_marked.bam \\
+   --METRICS_FILE ${sampleId}_metrics.txt \\
    --ASSUME_SORTED true \\
    --VALIDATION_STRINGENCY SILENT
 
 
   """
+}
+
+
+
+process SORTMARKED {
+  //tag "$bam"
+  tag "$sampleId"
+
+  cpus 10
+  executor 'slurm'
+
+  conda "$params.cacheDir/fpgAlign"
+  publishDir "$params.bwaMem", mode: 'copy'
+
+  input:
+    //file(bam)
+    tuple val(sampleId), path(bam)
+
+
+  output:
+      path('*sorted_marked.bam'), emit: sorted
+
+  script:
+
+  """
+   #!/usr/bin/env bash
+   
+   samtools sort --threads ${task.cpus} --output-fmt BAM "$bam" -o ${sampleId}_sorted_marked.bam
+   
+  """
+   
 }
 
 
@@ -94,16 +124,14 @@ process SAMINDEX {
 
 
   output:
-      path('picard/*.bai'), emit: bai
+      path('*.bai'), emit: bai
 
   script:
 
   """
    #!/usr/bin/env bash
 
-    if ! [[ -d picard ]]; then mkdir picard; fi
-
-    samtools index -@ ${task.cpus} $bam -o picard/${bam}.bai
+   samtools index -@ ${task.cpus} $bam -o ${bam}.bai
 
   """
 

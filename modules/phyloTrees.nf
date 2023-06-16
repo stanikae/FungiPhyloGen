@@ -39,7 +39,7 @@ process RUNIQTREE {
   
   pfx=`basename $projectDir`
 
-  iqtree -s $msa --prefix \$pfx -T AUTO -m GTR+F+ASC+R4 -o "reference" --threads-max ${task.cpus} 
+  iqtree -s $msa --prefix \$pfx -T AUTO -m GTR+F+ASC+R4 -o "reference" -B 1000 --threads-max ${task.cpus} 
  
   """
 
