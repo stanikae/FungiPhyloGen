@@ -210,9 +210,12 @@ process SOFTFILTERVCF {
 
     if ! [[ -d bcftools ]]; then mkdir bcftools; fi
     
-    bcftools view -v 'snps' --threads ${task.cpus} $bcf | \\
-     bcftools filter --threads ${task.cpus} -s 'LowQual' -i  'QUAL>=30 && AD[*:1]>=25 && DP>=10' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
+    #// bcftools view -v 'snps' --threads ${task.cpus} $bcf | \\
+    #//  bcftools filter --threads ${task.cpus} -s 'LowQual' -i  'QUAL>=30 && AD[*:1]>=25 && DP>=10' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
 
+    bcftools view -v 'snps' --threads ${task.cpus} $bcf | \\
+       bcftools filter -s 'LowQual' -i 'QUAL/DP>2.0 && FS<=60 && MQ>=40 && DP>=10 && AD>0.8 && QUAL>=30' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
+    
     #// && MQ>=30 && F_MISSING<0.9
 
     bcftools index bcftools/fpg.filt.bcf
