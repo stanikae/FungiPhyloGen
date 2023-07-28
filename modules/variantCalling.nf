@@ -232,7 +232,7 @@ process SOFTFILTERVCF {
 
 
     bcftools view -v 'snps' --threads ${task.cpus} $bcf | \\
-       bcftools filter -s 'LowQual' -i 'QUAL/DP>2.0 && FS<=60 && MQ>=40 && DP>=10 && AD>0.8 && QUAL>=30' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
+       bcftools filter -s 'LowQual' -i 'FS<=60 && MQ>=40 && DP>=10 && QUAL>=30' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
 
 
     bcftools index bcftools/fpg.filt.bcf

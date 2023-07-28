@@ -3,7 +3,7 @@ nextflow.enable.dsl=2
 
 
 process ALIGNBWAMEM {
-  tag "$sampleId"
+  //tag "$sampleId"
   
   cpus 8
   executor 'slurm'
@@ -43,7 +43,7 @@ process MARKDUPS {
   cpus 12
   executor 'slurm'
   
-  tag "$sampleId"
+  //tag "$sampleId"
 
   conda "$params.cacheDir/fpgAlign"
   publishDir "$params.bwaMem", mode: 'copy'
@@ -80,7 +80,7 @@ process MARKDUPS {
 
 process SORTMARKED {
   //tag "$bam"
-  tag "$sampleId"
+  //tag "$sampleId"
 
   cpus 10
   executor 'slurm'
@@ -110,7 +110,7 @@ process SORTMARKED {
 
 
 process SAMINDEX {
-  tag "$bam"
+  //tag "$bam"
   //tag "$sampleId"
   
   cpus 10
@@ -158,3 +158,15 @@ workflow ALN {
 }
 
 
+workflow TALN {
+  take:
+    vl
+    ch_in
+
+  main:
+     ALIGNBWAMEM(vl,ch_in )
+
+  emit:
+    bam = ALIGNBWAMEM.out.aln_bam
+
+}

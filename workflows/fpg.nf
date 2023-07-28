@@ -18,7 +18,15 @@ nextflow run main_fpg.nf --refseq $refseq --gbk $gbk --prjName "HistoAnalysis" -
 */
 
 // Check mandatory parameters
-if (params.readsDir) { reads_ch = Channel.fromPath("$params.readsDir/**.f*q.gz", checkIfExists: true) } else { exit 1, 'Please provide path to raw reads directory in config file...' }
+if (params.cleanreadsDir) { 
+	reads_ch = Channel.fromFilePairs("$params.cleanreadsDir/*_{1,2}.fq.gz", checkIfExists: true) 
+} else if (params.readsDir) { 
+	reads_ch = Channel.fromPath("$params.readsDir/**.f*q.gz", checkIfExists: true) 
+} else { 
+	exit 1, 'Please provide path to raw reads directory in config file...' 
+}
+
+// check if sample sheet file has been provided
 if (params.index) { index_ch = Channel.fromPath(params.index) } else { exit 1, 'Please specify input samplesheet...' }
 
 
@@ -99,6 +107,7 @@ include { RUNSNPEFF } from '../modules/annotate.nf' addParams(ann: "$params.resu
 
 include { trim } from '../modules/trimreads.nf'
 include { ALN } from '../modules/bwaAlign.nf'
+include { TALN } from '../modules/bwaAlign.nf'
 include { BCFTOOLS } from '../modules/variantCalling.nf'
 include { WFIQTREE } from '../modules/phyloTrees.nf'
 include { WFANNOTATESNP } from '../modules/annotate.nf'
@@ -114,35 +123,56 @@ include { DENOVO } from '../modules/denovo.nf'
 
 workflow FUNGIPHYLOGEN {
 
-  // rum fastqc on raw reads
-  FASTQCRAW(file("$contaminants"),file("$adapters"),reads_ch)
-
-
-  // trim reads using trim_galore
-  trim(index_ch)
-
- 
-  // run fastqc on clean reads
-  FASTQCCLEAN(file("$contaminants"),file("$adapters"),trim.out.rds.collect())
-
-
-  // run multiqc on raw reads
-  MULTIQCRAW(FASTQCRAW.out.collect())
-
-  // run multiqc on clean reads
-  MULTIQCCLEAN(FASTQCCLEAN.out.collect())
-
-
   // prepare and index ref file
   GETREPEATS(file("$params.refseq"))
   REPEATSBED(GETREPEATS.out.delta)
   MASKREF(file("$params.refseq"),REPEATSBED.out.rpts_bed)
   INDEXREF(MASKREF.out.masked_fa)
 
+  // clean raw reads
+  if (params.cleanreadsDir) {
 
+	//perform ref based mapping using previously cleaned reads
+        TALN(INDEXREF.out.prs,reads_ch)
+        MARKDUPS(TALN.out.bam)
+
+  }
+
+  if (params.readsDir) {
+	
+  	// run fastqc on raw reads
+  	FASTQCRAW(file("$contaminants"),file("$adapters"),reads_ch)
+
+  	// trim reads using trim_galore
+  	trim(index_ch)
+
+   	// run fastqc on clean reads
+  	FASTQCCLEAN(file("$contaminants"),file("$adapters"),trim.out.rds.collect())
+
+	 // run multiqc on raw reads
+  	MULTIQCRAW(FASTQCRAW.out.collect())
+
+  	// run multiqc on clean reads
+  	MULTIQCCLEAN(FASTQCCLEAN.out.collect())
+
+	// perform ref based mapping
+	ALN(INDEXREF.out.prs,trim.out.rds)
+
+	MARKDUPS(ALN.out.bam)
+  }
+ 
+	
+
+/*
   // perform ref based mapping
-  ALN(INDEXREF.out.prs,trim.out.rds)
-  MARKDUPS(ALN.out.bam)
+  if(trim.out.rds.ifEmpty('NADA').endsWith('NADA'){
+ 	 ALN(INDEXREF.out.prs,reads_ch)
+  } else {
+  	ALN(INDEXREF.out.prs,trim.out.rds)
+  }
+*/
+
+  //MARKDUPS(ALN.out.bam)
   SORTMARKED(MARKDUPS.out.marked)
   SAMINDEX(SORTMARKED.out.sorted)
 
