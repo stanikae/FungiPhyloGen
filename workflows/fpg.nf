@@ -45,11 +45,13 @@ params.fqcCln.mkdirs() ? ! params.fqcCln.exists() : 'Directory already exists'
 params.bwaMem = file("$params.resultsDir/align")
 params.bcftl = file("$params.resultsDir/variants")
 params.iq = file("$params.resultsDir/iqtree")
+params.nj = file("$params.resultsDir/rapidnj")
 params.dist = file("$params.resultsDir/snpdists")
 params.ann = file("$params.resultsDir/snpeff")
 params.deNovo = file("$params.resultsDir/assemblies")
 params.bcftl.mkdirs() ? ! params.bcftl.exists() : 'Directory already exists'
 params.iq.mkdirs() ? ! params.iq.exists() : 'Directory already exists'
+params.nj.mkdirs() ? ! params.nj.exists() : 'Directory already exists'
 params.deNovo.mkdirs() ? ! params.deNovo.exists() : 'Directory already exists'
 //params.flag = false
 
@@ -94,6 +96,7 @@ include { FILTERVCF } from '../modules/variantCalling.nf' addParams(bcftl: "$par
 include { VCFSNPS2FASTA } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
 include { VCF2PHYLIP } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
 include { RUNIQTREE } from '../modules/phyloTrees.nf' addParams(iq: "$params.resultsDir/iqtree")
+include { RUNRAPIDNJ } from '../modules/phyloTrees.nf' addParams(nj: "$params.resultsDir/rapidnj")
 include { RUNSNPDISTS } from '../modules/phyloTrees.nf' addParams(dist: "$params.resultsDir/snpdists")
 include { RUNSNPEFF } from '../modules/annotate.nf' addParams(ann: "$params.resultsDir/snpeff")
 
@@ -183,7 +186,13 @@ workflow FUNGIPHYLOGEN {
 
 
   // run iqtree
-  WFIQTREE(BCFTOOLS.out.msa_snp)
+  if(params.genus=="Candida"){
+      RUNRAPIDNJ(BCFTOOLS.out.aln_fold)
+     // WFIQTREE(BCFTOOLS.out.aln_fold)
+  }else{
+     RUNRAPIDNJ(BCFTOOLS.out.msa_snp)
+     WFIQTREE(BCFTOOLS.out.msa_snp)
+  }
 
 
   // perform snp annotations
