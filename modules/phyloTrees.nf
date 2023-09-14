@@ -18,6 +18,7 @@ process RUNIQTREE {
     path(msa)
 
   output:
+    path("*.contree"), emit: con
     path("*.treefile"), emit: tre
     path("*.iqtree"), emit: iq_log
     path("*.mldist"), emit: mldist
@@ -44,6 +45,45 @@ process RUNIQTREE {
   """
 
 }
+
+
+
+
+
+process RUNRAPIDNJ {
+
+   cpus 16
+   executor 'slurm'
+
+   conda "$params.cacheDir/fpgPhylogen"
+   publishDir "$params.nj", mode: 'copy'
+
+   input:
+     path(msa)
+
+
+   output:
+     path("*.dist"), emit: dist
+     path("*.nwk"), emit: nwk
+
+   script:
+
+   """
+   #!/usr/bin/env bash
+   
+   if ! [[ -d rapidnj ]]; then mkdir rapidnj; fi
+
+  
+   rapidnj -i fa -c ${task.cpus} -b 1000 -o m -x rapid.nj.1000bootstraps.dist $msa
+
+   rapidnj -i fa -c ${task.cpus} -b 1000 -o t -x rapid.nj.1000bootstraps.nwk $msa
+
+
+   """
+
+
+}
+
 
 
 
@@ -98,6 +138,7 @@ workflow WFIQTREE {
      RUNSNPDISTS(aln)
 
   emit:
+   con_tre = RUNIQTREE.out.con
    iq_tre = RUNIQTREE.out.tre
    iq_log = RUNIQTREE.out.iq_log
    iq_mldist = RUNIQTREE.out.mldist
