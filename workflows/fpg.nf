@@ -21,13 +21,14 @@ nextflow run main_fpg.nf --refseq $refseq --gbk $gbk --prjName "HistoAnalysis" -
 if (params.cleanreadsDir) { 
 	reads_ch = Channel.fromFilePairs("$params.cleanreadsDir/*_{1,2}.fq.gz", checkIfExists: true) 
 } else if (params.readsDir) { 
-	reads_ch = Channel.fromPath("$params.readsDir/**.f*q.gz", checkIfExists: true) 
+	reads_ch = Channel.fromPath("$params.readsDir/**.f*q.gz", checkIfExists: true)
+	
+	// check if sample sheet file has been provided
+        if (params.index) { index_ch = Channel.fromPath(params.index) } else { exit 1, 'Please specify input samplesheet...' } 
+
 } else { 
 	exit 1, 'Please provide path to raw reads directory in config file...' 
 }
-
-// check if sample sheet file has been provided
-if (params.index) { index_ch = Channel.fromPath(params.index) } else { exit 1, 'Please specify input samplesheet...' }
 
 
 // Set parameters
@@ -196,7 +197,7 @@ workflow FUNGIPHYLOGEN {
 
 
   // perform snp annotations
-  //WFANNOTATESNP(BCFTOOLS.out.pass_vcf,file("$params.refseq"),file("$params.gbk"))
+  WFANNOTATESNP(BCFTOOLS.out.pass_vcf,file("$params.refseq"),file("$params.gbk"))
     
 
   // perform de novo ascsembly

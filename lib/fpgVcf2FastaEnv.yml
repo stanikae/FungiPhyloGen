@@ -9,4 +9,4 @@ dependencies:
   - scipy
   - pip
   - pip:
-      - numpy
+      - numpy==1.23.5

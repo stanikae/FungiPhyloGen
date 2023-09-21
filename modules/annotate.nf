@@ -6,7 +6,7 @@ nextflow.enable.dsl=2
 process RUNSNPEFF {
  // tag "$sampleId"
 
-  cpus 24
+  cpus 8
   executor 'slurm'
 
   conda "$params.cacheDir/fpgCallVariants"
@@ -60,7 +60,7 @@ process RUNSNPEFF {
      # build database
      java -jar \$binDir/snpEff.jar build -genbank -dataDir genomes -c snpEff.config ref
      # Annotate SNPs with snpEff
-     java -jar \$binDir/snpEff.jar ann ref -noLog -nodownload -onlyProtein -dataDir genomes -c snpEff.config fpg.vcf > ../snpeff_ann.vcf
+     java -jar \$binDir/snpEff.jar ann ref -noLog -nodownload -onlyProtein -dataDir genomes -t ${task.cpus} -c snpEff.config fpg.vcf > ../snpeff_ann.vcf
   fi
 
   

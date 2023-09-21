@@ -1,8 +1,7 @@
 name: fpgvcfKit
 channels:
-  - anaconda
-  - conda-forge
   - bioconda
+  - conda-forge
   - defaults
 dependencies:
   - vcfkit=0.2.9
