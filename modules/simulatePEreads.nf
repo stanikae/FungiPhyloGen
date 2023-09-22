@@ -2,7 +2,7 @@
 nextflow.enable.dsl=2
 
 
-params.cacheDir = "/scratch/sysuser/stanford/.conda/envs"
+params.cacheDir = "/scratch/package/anaconda/anaconda3_2023-02-27/envs"
 
 /*
 ==================================================================
