@@ -103,6 +103,7 @@ process RUNSNPDISTS {
 
   output:
     path("snpdists/*snpdist.csv"), emit: dist
+    path("snpdists/*.snpdistmolten.csv"), emit: molt
 
 
   script:
@@ -116,11 +117,14 @@ process RUNSNPDISTS {
   pfx=`basename $projectDir`
 
   snp-dists -j ${task.cpus} -c $msa > snpdists/\${pfx}.snpdist.csv
- 
+  snp-dists -j ${task.cpus} -a -m -c $msa > snpdists/\${pfx}.snpdistmolten.csv
+
   if [[ -f "snpdists/\${pfx}.snpdist.csv" ]]; then
-  	
-     sed -i 's/_sorted_marked.bam//g' snpdists/\${pfx}.snpdist.csv
-  
+	sed -i 's/_sorted_marked.bam//g' snpdists/\${pfx}.snpdist.csv
+  fi
+
+  if [[ -f "snpdists/\${pfx}.snpdistmolten.csv" ]]; then
+       sed -i 's/_sorted_marked.bam//g' snpdists/\${pfx}.snpdistmolten.csv 
   fi
 
   """
@@ -145,6 +149,7 @@ workflow WFIQTREE {
    iq_bionj = RUNIQTREE.out.bionj
    log_file = RUNIQTREE.out.log
    snp_dist = RUNSNPDISTS.out.dist
+   snp_molt = RUNSNPDISTS.out.molt
         
 
 }
