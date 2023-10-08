@@ -19,7 +19,7 @@ nextflow run main_fpg.nf --refseq $refseq --gbk $gbk --prjName "HistoAnalysis" -
 
 // Check mandatory parameters
 if (params.cleanreadsDir) { 
-	reads_ch = Channel.fromFilePairs("$params.cleanreadsDir/*_{1,2}.fq.gz", checkIfExists: true) 
+	reads_ch = Channel.fromFilePairs("$params.cleanreadsDir/*_val_{1,2}.fq.gz", checkIfExists: true) 
 } else if (params.readsDir) { 
 	reads_ch = Channel.fromPath("$params.readsDir/**.f*q.gz", checkIfExists: true)
 	
@@ -88,6 +88,7 @@ include { MARKDUPS } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.re
 include { SORTMARKED } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
 include { SAMINDEX } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
 include { CALLVARIANTS } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants") 
+include { FILTERSAMPLE } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
 //include { CALLVARIANTSgrp } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
 //include { INDEXBCF } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
 include { REHEADERVCF } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
@@ -188,11 +189,13 @@ workflow FUNGIPHYLOGEN {
 
   // run iqtree
   if(params.genus=="Candida"){
-      RUNRAPIDNJ(BCFTOOLS.out.aln_fold)
-     // WFIQTREE(BCFTOOLS.out.aln_fold)
+      // RUNRAPIDNJ(BCFTOOLS.out.aln_fold)
+      // WFIQTREE(BCFTOOLS.out.aln_fold)
+      RUNRAPIDNJ(BCFTOOLS.out.msa_snp)
+      WFIQTREE(BCFTOOLS.out.msa_snp)
   }else{
-     RUNRAPIDNJ(BCFTOOLS.out.msa_snp)
-     WFIQTREE(BCFTOOLS.out.msa_snp)
+      RUNRAPIDNJ(BCFTOOLS.out.msa_snp)
+      WFIQTREE(BCFTOOLS.out.msa_snp)
   }
 
 
