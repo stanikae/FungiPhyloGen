@@ -33,20 +33,86 @@ process CALLVARIANTS {
 
    
    bcftools mpileup --threads ${task.cpus} -a AD -Q 30 -f $ref $bam -Ou \\
-   | bcftools call --threads ${task.cpus} --ploidy $params.ploidy -mv -Ob -o \${dirNam}_call.bcf
+   | bcftools call --threads ${task.cpus} --ploidy $params.ploidy -m -Ob -o \${dirNam}_call.bcf
 
    bcftools index \${dirNam}_call.bcf
 
   """
 }
 
+// 2023-10-07: remove -v from bcftools call to address issue of missing variants
+// suggestion taken from biostars: https://www.biostars.org/p/9466376/
+
+
+// 2023-10-08: Filter individual samples first before merging
+// As suggested at https://www.biostars.org/p/411766/ this will minimize false positives unique to a single sample
+
+
+
+process FILTERSAMPLE {
+
+   conda "$params.cacheDir/fpgCallVariants"
+   publishDir "$params.bcftl", mode: 'copy'
+
+   cpus 12
+   executor 'slurm'
+
+   input:
+     path(bcf)
+     path(idx)
+
+
+   output:
+     path("bcftools/filtered/*.filtered.bcf"), emit: smpl_filt
+     path("bcftools/filtered/*.filtered.bcf.csi"), emit: smpl_idx
+
+
+   script:
+        if(params.genus=="Candida"){
+
+          """
+          #!/usr/bin/env bash
+
+          if ! [[ -d bcftools/filtered ]]; then mkdir -p bcftools/filtered; fi
+
+	  sampleNam=`basename -s _call.bcf "$bcf"`
+
+
+          bcftools view --threads ${task.cpus} $bcf | \\
+                        bcftools filter -i 'QUAL/DP>2.0 && FS<=60 && MQ>=40 && DP>=10' -g8 -G10 -Ob -o bcftools/filtered/\${sampleNam}.filtered.bcf
+
+
+
+          bcftools index bcftools/filtered/\${sampleNam}.filtered.bcf
+
+    	  """
+   	} else {
+
+    	  """
+    	  #!/usr/bin/env bash
+
+    	  if ! [[ -d bcftools/filtered ]]; then mkdir -p bcftools/filtered; fi
+
+    	  sampleNam=`basename -s _call.bcf "$bcf"`
+
+
+    	  bcftools view --threads ${task.cpus} $bcf | \\
+       		bcftools filter -i 'FS<=60 && MQ>=40 && DP>=10 && QUAL>=30' -g8 -G10 -Ob -o bcftools/filtered/\${sampleNam}.filtered.bcf
+
+
+    	  bcftools index bcftools/filtered/\${sampleNam}.filtered.bcf
+
+
+    """
+   }   
+}
 
 
 /*
 process CALLVARIANTSgrp {
  // tag "$sampleId"
 
-  cpus 24
+  cpus 12
   executor 'slurm'
   
   conda "$params.cacheDir/fpgCallVariants"
@@ -86,7 +152,7 @@ process CALLVARIANTSgrp {
 
 process BCFMERGE {
   
-  cpus 24
+  cpus 12
   executor 'slurm'
 
   conda "$params.cacheDir/fpgCallVariants"
@@ -110,7 +176,7 @@ process BCFMERGE {
   if ! [[ -d bcfmerge ]]; then mkdir bcfmerge; fi
 
 
-  bcftools merge $bcf --threads ${task.cpus} -Ob -o bcfmerge/fpg.call.bcf
+  bcftools merge -0 $bcf --threads ${task.cpus} -Ob -o bcfmerge/fpg.call.bcf
   bcftools index bcfmerge/fpg.call.bcf
  
  
@@ -190,7 +256,7 @@ process SOFTFILTERVCF {
    conda "$params.cacheDir/fpgCallVariants"
    publishDir "$params.bcftl", mode: 'copy'
 
-   cpus 24
+   cpus 12
    executor 'slurm'
 
    input:
@@ -244,9 +310,10 @@ process SOFTFILTERVCF {
 }
 
 
+// 2023-10-08: Add bcftools -m -any option to get split multiallelic variants 
 
 process BCFNORM {
-   cpus 24
+   cpus 12
    executor 'slurm'
 
    conda "$params.cacheDir/fpgCallVariants"
@@ -270,7 +337,7 @@ process BCFNORM {
    
    if ! [[ -d bcftools ]]; then mkdir bcftools; fi
    
-   bcftools norm --threads ${task.cpus} -f $ref $bcf -o bcftools/fpg.filt.norm.bcf 2> bcftools/norm.log
+   bcftools norm -m -any --threads ${task.cpus} -f $ref $bcf -o bcftools/fpg.filt.norm.bcf 2> bcftools/norm.log
    
    bcftools index bcftools/fpg.filt.norm.bcf
 
@@ -284,7 +351,7 @@ process BCFNORM {
 
 process FILTERVCF {
  
-   cpus 16
+   cpus 12
    executor 'slurm'
 
    conda "$params.cacheDir/fpgCallVariants"
@@ -427,7 +494,8 @@ workflow BCFTOOLS {
      //			 map { file -> def key = file.name.toString().tokenize('_').get(0).replace('[','')
      //        			return tuple(key, file)} 
      //)
-     BCFMERGE(CALLVARIANTS.out.bcf.collect(),CALLVARIANTS.out.bcf_idx.collect())
+     FILTERSAMPLE(CALLVARIANTS.out.bcf,CALLVARIANTS.out.bcf_idx)
+     BCFMERGE(FILTERSAMPLE.out.smpl_filt.collect(),FILTERSAMPLE.out.smpl_idx.collect())
      REHEADERVCF(BCFMERGE.out.mge,BCFMERGE.out.mge_idx)
      //REHEADERVCF(CALLVARIANTSgrp.out.vcfs,CALLVARIANTSgrp.out.idx)
      SOFTFILTERVCF(REHEADERVCF.out.reh_bcf,REHEADERVCF.out.reh_idx)
@@ -441,6 +509,8 @@ workflow BCFTOOLS {
     //bcf_idx = CALLVARIANTSgrp.out.idx
     bcf_ind = CALLVARIANTS.out.bcf
     bcf_rawIdx = CALLVARIANTS.out.bcf_idx
+    smpl_fbcf = FILTERSAMPLE.out.smpl_filt
+    smpl_fidx = FILTERSAMPLE.out.smpl_idx
     bcf_mge = BCFMERGE.out.mge
     bcf_idx = BCFMERGE.out.mge_idx
     bcf_reh = REHEADERVCF.out.reh_bcf
