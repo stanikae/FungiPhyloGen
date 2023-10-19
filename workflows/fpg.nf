@@ -134,6 +134,7 @@ workflow FUNGIPHYLOGEN {
   MASKREF(file("$params.refseq"),REPEATSBED.out.rpts_bed)
   INDEXREF(MASKREF.out.masked_fa)
 
+
   // clean raw reads
   if (params.cleanreadsDir) {
 
