@@ -33,7 +33,7 @@ process CALLVARIANTS {
 
    
    bcftools mpileup --threads ${task.cpus} -a AD -Q 30 -f $ref $bam -Ou \\
-   | bcftools call --threads ${task.cpus} --ploidy $params.ploidy -m -Ob -o \${dirNam}_call.bcf
+   | bcftools call --threads ${task.cpus} -a GQ --ploidy $params.ploidy -m -Ob -o \${dirNam}_call.bcf
 
    bcftools index \${dirNam}_call.bcf
 
@@ -78,10 +78,10 @@ process FILTERSAMPLE {
 	  sampleNam=`basename -s _call.bcf "$bcf"`
 
       
-          bcftools view -v 'snps' --threads ${task.cpus} $bcf | \\
-                        bcftools filter -i 'QUAL/DP>2.0 && FS<=60 && MQ>=30 && DP>=10' -g8 -G10 -Ob -o bcftools/filtered/\${sampleNam}.filtered.bcf
+          #bcftools view -v 'snps' --threads ${task.cpus} $bcf | \\
+           #             bcftools filter -i 'QUAL/DP>2.0 && FS<=60 && MQ>=30 && DP>=10' -g8 -G10 -Ob -o bcftools/filtered/\${sampleNam}.filtered.bcf
 
-
+          bcftools view --threads ${task.cpus} $bcf -Ob -o bcftools/filtered/\${sampleNam}.filtered.bcf
 
           bcftools index bcftools/filtered/\${sampleNam}.filtered.bcf
 
@@ -277,14 +277,21 @@ process SOFTFILTERVCF {
 
     	  if ! [[ -d bcftools ]]; then mkdir bcftools; fi
     
-   	  #// bcftools view -v 'snps' --threads ${task.cpus} $bcf | \\
-    	  #//  bcftools filter --threads ${task.cpus} -s 'LowQual' -i  'QUAL>=30 && AD[*:1]>=25 && DP>=10' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
-    	  #// 'QUAL/DP>2.0 && FS<=60 && MQ>=40 && DP>=10 && AD>0.8 && QUAL>=30'
-
+   	  bcftools view -v 'snps' --threads ${task.cpus} $bcf \\
+           | bcftools +fill-tags -- -t FORMAT/VAF \\
+           | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'FMT/VAF>0.8' -g8 -G10 -Ob \\
+           | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'FMT/GQ>50' -g8 -G10 -Ob | \\
+               bcftools filter --threads ${task.cpus} -s 'LowQual' -i  'QUAL>=50 & AD[*:1]>=25 & AC>=9 & DP>=10' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
+	       #bcftools filter --threads ${task.cpus} -s 'LowQual' -e  'QUAL/DP<2.0 || FS>60 || MQ<40 || DP<10' -g8 -G10 -Ob | \\
+	       #bcftools filter --threads ${task.cpus} -s 'LowQual' -i  'QUAL>=50 && AD[*:1]>=25 && AC>=3 && DP>=10' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
+	 
+          #| bcftools filter --threads ${task.cpus} -s 'LowQual' -e  'QUAL/DP<2.0 || FS>60 || MQ<40 || DP<10' -g8 -G10 -Ob \\
+    	  
+	        #// 'QUAL/DP>2.0 && FS<=60 && MQ>=40 && DP>=10 && AD>0.8 && QUAL>=30'
     		#bcftools view -v 'snps' --threads ${task.cpus} $bcf | \\
        		#	bcftools filter -s 'LowQual' -i 'QUAL/DP>2.0 && FS<=60 && MQ>=30 && DP>=10' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
                 
-                bcftools view --threads ${task.cpus} $bcf -Ob -o bcftools/fpg.filt.bcf   
+                #// bcftools view --threads ${task.cpus} $bcf -Ob -o bcftools/fpg.filt.bcf   
     	 #// && MQ>=30 && F_MISSING<0.9
 
    	        bcftools index bcftools/fpg.filt.bcf
@@ -381,16 +388,16 @@ process FILTERVCF {
 
     #bcftools index $bcf
  
-    #bcftools view --threads ${task.cpus} -i 'FILTER="PASS"' $bcf -Ob -o bcftools/fpg.filt.norm.pass.bcf
-    bcftools view --threads ${task.cpus} $bcf -Ob -o bcftools/fpg.filt.norm.pass.bcf
+    bcftools view --threads ${task.cpus} -i 'FILTER="PASS"' $bcf -Ob -o bcftools/fpg.filt.norm.pass.bcf
+    # bcftools view --threads ${task.cpus} $bcf -Ob -o bcftools/fpg.filt.norm.pass.bcf
     bcftools index bcftools/fpg.filt.norm.pass.bcf
 
     # create vcf file n bgzip it
-    #bcftools view --threads ${task.cpus} -i 'FILTER="PASS"' -Ov -o bcftools/fpg.filt.norm.pass.vcf $bcf
-    #bcftools index -t bcftools/fpg.filt.norm.pass.vcf
+    bcftools view --threads ${task.cpus} -i 'FILTER="PASS"' -Ov -o bcftools/fpg.filt.norm.pass.vcf $bcf
+    bcftools index -t bcftools/fpg.filt.norm.pass.vcf
     
 
-    bcftools view --threads ${task.cpus} -Ov -o bcftools/fpg.filt.norm.pass.vcf $bcf
+    #bcftools view --threads ${task.cpus} -Ov -o bcftools/fpg.filt.norm.pass.vcf $bcf
     
     # get count of samples in bcf file
     bcftools query --list-samples bcftools/fpg.filt.norm.pass.bcf > bcftools/fpg.sampleList.txt
