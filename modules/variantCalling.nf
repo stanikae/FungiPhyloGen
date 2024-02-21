@@ -276,25 +276,30 @@ process SOFTFILTERVCF {
     	  #!/usr/bin/env bash
 
     	  if ! [[ -d bcftools ]]; then mkdir bcftools; fi
+
+          # get count of samples in bcf file
+          nsamples=\$(bcftools query --list-samples $bcf | wc -l)
+          nac=`awk "BEGIN {print (90/100)*\$nsamples}" | awk '{ print int(\$1) }'`
     
    	  bcftools view -v 'snps' --threads ${task.cpus} $bcf \\
            | bcftools +fill-tags -- -t FORMAT/VAF \\
            | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'FMT/VAF>0.8' -g8 -G10 -Ob \\
-           | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'FMT/GQ>50' -g8 -G10 -Ob | \\
-               bcftools filter --threads ${task.cpus} -s 'LowQual' -i  'QUAL>=50 & AD[*:1]>=25 & AC>=9 & DP>=10' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
+           | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'FMT/GQ>50' -g8 -G10 -Ob \\
+           | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'MQ>=40 && DP>=10 && QUAL>=30 && (MQSBZ > -2 || MQSBZ < 2) && FMT/AD > 10' -g8 -G10 -Ob | \\
+               bcftools filter --threads ${task.cpus} -s 'LowQual' -i  "QUAL>=50 & AD[*:1]>=25 & AC>=\$nac & DP>=10" -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
 	       #bcftools filter --threads ${task.cpus} -s 'LowQual' -e  'QUAL/DP<2.0 || FS>60 || MQ<40 || DP<10' -g8 -G10 -Ob | \\
 	       #bcftools filter --threads ${task.cpus} -s 'LowQual' -i  'QUAL>=50 && AD[*:1]>=25 && AC>=3 && DP>=10' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
-	 
-          #| bcftools filter --threads ${task.cpus} -s 'LowQual' -e  'QUAL/DP<2.0 || FS>60 || MQ<40 || DP<10' -g8 -G10 -Ob \\
+          
+               #| bcftools filter --threads ${task.cpus} -s 'LowQual' -e  'QUAL/DP<2.0 || FS>60 || MQ<40 || DP<10' -g8 -G10 -Ob \\
     	  
 	        #// 'QUAL/DP>2.0 && FS<=60 && MQ>=40 && DP>=10 && AD>0.8 && QUAL>=30'
     		#bcftools view -v 'snps' --threads ${task.cpus} $bcf | \\
        		#	bcftools filter -s 'LowQual' -i 'QUAL/DP>2.0 && FS<=60 && MQ>=30 && DP>=10' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
                 
                 #// bcftools view --threads ${task.cpus} $bcf -Ob -o bcftools/fpg.filt.bcf   
-    	 #// && MQ>=30 && F_MISSING<0.9
+    	  #// && MQ>=30 && F_MISSING<0.9
 
-   	        bcftools index bcftools/fpg.filt.bcf
+   	  bcftools index bcftools/fpg.filt.bcf
 
     """
    }
