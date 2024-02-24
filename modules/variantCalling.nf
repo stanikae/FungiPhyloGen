@@ -251,6 +251,46 @@ process INDEXBCF {
 */
 
 
+
+// 2023-10-08: Add bcftools -m -any option to get split multiallelic variants
+
+process BCFNORM {
+   cpus 12
+   executor 'slurm'
+
+   conda "$params.cacheDir/fpgCallVariants"
+   publishDir "$params.bcftl", mode: 'copy'
+
+   input:
+     path(bcf)
+     path(idx)
+     path(ref)
+
+
+   output:
+     path("bcftools/fpg.norm.bcf"), emit: bcf_norm
+     path("bcftools/fpg.norm.bcf.csi"), emit: idx_norm
+     path("bcftools/norm.log"), emit: log_norm
+
+   script:
+
+   """
+   #!/usr/bin/env bash
+
+   if ! [[ -d bcftools ]]; then mkdir bcftools; fi
+
+   bcftools norm -m -any --threads ${task.cpus} -f $ref $bcf -o bcftools/fpg.norm.bcf 2> bcftools/norm.log
+
+   bcftools index bcftools/fpg.norm.bcf
+
+   """
+
+
+}
+
+
+
+
 process SOFTFILTERVCF {
    
    conda "$params.cacheDir/fpgCallVariants"
@@ -281,13 +321,30 @@ process SOFTFILTERVCF {
           nsamples=\$(bcftools query --list-samples $bcf | wc -l)
           nac=`awk "BEGIN {print (90/100)*\$nsamples}" | awk '{ print int(\$1) }'`
     
-   	  bcftools view -v 'snps' --threads ${task.cpus} $bcf \\
-           | bcftools +fill-tags -- -t FORMAT/VAF \\
-           | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'FMT/VAF>0.8' -g8 -G10 -Ob \\
-           | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'FMT/GQ>50' -g8 -G10 -Ob \\
-           | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'MQ>=40 && DP>=10 && QUAL>=30 && (MQSBZ > -2 || MQSBZ < 2) && FMT/AD > 10' -g8 -G10 -Ob | \\
-               bcftools filter --threads ${task.cpus} -s 'LowQual' -i  "QUAL>=50 & AD[*:1]>=25 & AC>=\$nac & DP>=10" -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
-	       #bcftools filter --threads ${task.cpus} -s 'LowQual' -e  'QUAL/DP<2.0 || FS>60 || MQ<40 || DP<10' -g8 -G10 -Ob | \\
+   	  #bcftools view -v 'snps' --threads ${task.cpus} $bcf \\
+          # | bcftools +fill-tags -- -t FORMAT/VAF \\
+          # | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'FMT/VAF>0.8 && FMT/GQ>50' -g8 -G10 -Ob \\
+          # | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'MQ>=40 && DP>=10 && QUAL>=30 && (MQSBZ > -2 || MQSBZ < 2) && FMT/AD > 10' -g8 -G10 -Ob | \\
+          #   bcftools filter --threads ${task.cpus} -s 'LowQual' -i "QUAL>=50 & AD[*:1]>=25 & (AC[0]+AC[1])>=\$nac & DP>=10" -g8 -G10 -Ob -o bcftools/fpg.filt.bcf #| \\
+
+
+            bcftools view -v 'snps' --threads ${task.cpus} $bcf \\
+             | bcftools +fill-tags -- -t FORMAT/VAF \\
+             | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'FMT/VAF>0.8 && FMT/GQ>50' -g8 -G10 -Ob \\
+             | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'MQ>=30 && DP>=10 && QUAL>=30 && (MQSBZ > -2 || MQSBZ < 2) && FMT/AD[:1]>=10' -g8 -G10 -Ob \\
+             | bcftools +setGT -- -t q -n . -i 'GT="1" & FMT/VAF>0.8 & FMT/GQ>50 & AD[:1]<10' \\
+             | bcftools filter --threads ${task.cpus} -s 'LowQual' -i  "QUAL>=30 & AD[*:1]>=10 & (AC[0]/AN)*100>=90 & DP>=10" -g8 -G10 -Ob \\
+             | bcftools +fill-tags -- -t F_MISSING | bcftools filter -s 'LowQual' -e 'F_MISSING>=0.25' -Ob -o bcftools/fpg.filt.bcf
+
+
+
+          #   bcftools filter --threads ${task.cpus} -s 'LowQual' -i  "(QUAL/DP)>=2 & MQ>=40 & FS<=60 & AD[*:1]>=25 & ((AC[0]+AC[1])/AN)*100>=90 & DP>=10" -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
+               
+               
+               #| bcftools filter --threads ${task.cpus} -s 'LowQual' -i '((AC[0]+AC[1])/AN)*100>=75' -g8 -G10 -Ob \\
+               #bcftools filter --threads ${task.cpus} -s 'LowQual' -i  "QUAL>=50 & AD[*:1]>=25 & AC>=\$nac & DP>=10" -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
+	       
+               #bcftools filter --threads ${task.cpus} -s 'LowQual' -e  'QUAL/DP<2.0 || FS>60 || MQ<40 || DP<10' -g8 -G10 -Ob | \\
 	       #bcftools filter --threads ${task.cpus} -s 'LowQual' -i  'QUAL>=50 && AD[*:1]>=25 && AC>=3 && DP>=10' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
           
                #| bcftools filter --threads ${task.cpus} -s 'LowQual' -e  'QUAL/DP<2.0 || FS>60 || MQ<40 || DP<10' -g8 -G10 -Ob \\
@@ -320,43 +377,6 @@ process SOFTFILTERVCF {
     """
 
   }
-}
-
-
-// 2023-10-08: Add bcftools -m -any option to get split multiallelic variants 
-
-process BCFNORM {
-   cpus 12
-   executor 'slurm'
-
-   conda "$params.cacheDir/fpgCallVariants"
-   publishDir "$params.bcftl", mode: 'copy'
-
-   input:
-     path(bcf)
-     path(idx)
-     path(ref)
-
-
-   output:
-     path("bcftools/fpg.filt.norm.bcf"), emit: bcf_norm
-     path("bcftools/fpg.filt.norm.bcf.csi"), emit: idx_norm
-     path("bcftools/norm.log"), emit: log_norm
-
-   script:
-
-   """
-   #!/usr/bin/env bash
-   
-   if ! [[ -d bcftools ]]; then mkdir bcftools; fi
-   
-   bcftools norm -m -any --threads ${task.cpus} -f $ref $bcf -o bcftools/fpg.filt.norm.bcf 2> bcftools/norm.log
-   
-   bcftools index bcftools/fpg.filt.norm.bcf
-
-   """
-
-
 }
 
 
@@ -398,7 +418,7 @@ process FILTERVCF {
     bcftools index bcftools/fpg.filt.norm.pass.bcf
 
     # create vcf file n bgzip it
-    bcftools view --threads ${task.cpus} -i 'FILTER="PASS"' -Ov -o bcftools/fpg.filt.norm.pass.vcf $bcf
+    bcftools view --threads ${task.cpus} -i 'FILTER="PASS"' $bcf -Ov -o bcftools/fpg.filt.norm.pass.vcf
     bcftools index -t bcftools/fpg.filt.norm.pass.vcf
     
 
@@ -514,9 +534,10 @@ workflow BCFTOOLS {
      BCFMERGE(FILTERSAMPLE.out.smpl_filt.collect(),FILTERSAMPLE.out.smpl_idx.collect())
      REHEADERVCF(BCFMERGE.out.mge,BCFMERGE.out.mge_idx)
      //REHEADERVCF(CALLVARIANTSgrp.out.vcfs,CALLVARIANTSgrp.out.idx)
-     SOFTFILTERVCF(REHEADERVCF.out.reh_bcf,REHEADERVCF.out.reh_idx)
-     BCFNORM(SOFTFILTERVCF.out.bcf_filt,SOFTFILTERVCF.out.idx_filt,fa) 
-     FILTERVCF(BCFNORM.out.bcf_norm,BCFNORM.out.idx_norm)
+     BCFNORM(REHEADERVCF.out.reh_bcf,REHEADERVCF.out.reh_idx,fa)
+     SOFTFILTERVCF(BCFNORM.out.bcf_norm,BCFNORM.out.idx_norm)
+     //BCFNORM(SOFTFILTERVCF.out.bcf_filt,SOFTFILTERVCF.out.idx_filt,fa) 
+     FILTERVCF(SOFTFILTERVCF.out.bcf_filt,SOFTFILTERVCF.out.idx_filt)
      VCFSNPS2FASTA(FILTERVCF.out.vcf_pass,FILTERVCF.out.sample_list) //,FILTERVCF.out.tbi_pass)
      VCF2PHYLIP(FILTERVCF.out.vcf_pass) //,FILTERVCF.out.tbi_pass)
 
