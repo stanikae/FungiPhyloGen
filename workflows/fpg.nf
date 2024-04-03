@@ -193,10 +193,10 @@ workflow FUNGIPHYLOGEN {
       // RUNRAPIDNJ(BCFTOOLS.out.aln_fold)
       // WFIQTREE(BCFTOOLS.out.aln_fold)
       RUNRAPIDNJ(BCFTOOLS.out.msa_snp)
-      WFIQTREE(BCFTOOLS.out.msa_snp)
+      WFIQTREE(BCFTOOLS.out.msa_snp,BCFTOOLS.out.aln_snp)
   }else{
       RUNRAPIDNJ(BCFTOOLS.out.msa_snp)
-      WFIQTREE(BCFTOOLS.out.msa_snp)
+      WFIQTREE(BCFTOOLS.out.msa_snp,BCFTOOLS.out.aln_snp)
   }
 
 

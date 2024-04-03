@@ -100,10 +100,13 @@ process RUNSNPDISTS {
   input:
     //val ready
     path(msa)
+    path(vmsa)
 
   output:
     path("snpdists/*snpdist.csv"), emit: dist
     path("snpdists/*.snpdistmolten.csv"), emit: molt
+    path("snpdists/*vcf2phylo.snpdist.csv"), emit: vdist
+    path("snpdists/*.vcf2phylo.snpdistmolten.csv"), emit: vmolt
 
 
   script:
@@ -119,12 +122,24 @@ process RUNSNPDISTS {
   snp-dists -j ${task.cpus} -c $msa > snpdists/\${pfx}.snpdist.csv
   snp-dists -j ${task.cpus} -a -m -c $msa > snpdists/\${pfx}.snpdistmolten.csv
 
+  snp-dists -j ${task.cpus} -c $vmsa > snpdists/\${pfx}.vcf2phylo.snpdist.csv
+  snp-dists -j ${task.cpus} -a -m -c $vmsa > snpdists/\${pfx}.vcf2phylo.snpdistmolten.csv
+
   if [[ -f "snpdists/\${pfx}.snpdist.csv" ]]; then
 	sed -i 's/_sorted_marked.bam//g' snpdists/\${pfx}.snpdist.csv
   fi
 
   if [[ -f "snpdists/\${pfx}.snpdistmolten.csv" ]]; then
        sed -i 's/_sorted_marked.bam//g' snpdists/\${pfx}.snpdistmolten.csv 
+  fi
+
+
+  if [[ -f "snpdists/\${pfx}.vcf2phylo.snpdist.csv" ]]; then
+        sed -i 's/_sorted_marked.bam//g' snpdists/\${pfx}.vcf2phylo.snpdist.csv
+  fi
+
+  if [[ -f "snpdists/\${pfx}.vcf2phylo.snpdistmolten.csv" ]]; then
+       sed -i 's/_sorted_marked.bam//g' snpdists/\${pfx}.vcf2phylo.snpdistmolten.csv
   fi
 
   """
@@ -136,10 +151,11 @@ process RUNSNPDISTS {
 workflow WFIQTREE {
   take:
     aln
+    valn
 
   main:
      RUNIQTREE(aln)
-     RUNSNPDISTS(aln)
+     RUNSNPDISTS(aln,valn)
 
   emit:
    con_tre = RUNIQTREE.out.con
@@ -150,6 +166,8 @@ workflow WFIQTREE {
    log_file = RUNIQTREE.out.log
    snp_dist = RUNSNPDISTS.out.dist
    snp_molt = RUNSNPDISTS.out.molt
+   snp_vdist = RUNSNPDISTS.out.vdist
+   snp_vmolt = RUNSNPDISTS.out.vmolt
         
 
 }
