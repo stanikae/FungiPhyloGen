@@ -429,6 +429,31 @@ process SOFTFILTERVCF {
 
     """
    }
+   else if(params.genus=="auris") {
+
+	
+          """
+          #!/usr/bin/env bash
+
+          if ! [[ -d bcftools ]]; then mkdir bcftools; fi
+
+          # get count of samples in bcf file
+          nsamples=\$(bcftools query --list-samples $bcf | wc -l)
+          nac=`awk "BEGIN {print (90/100)*\$nsamples}" | awk '{ print int(\$1) }'`
+
+	
+	 #C. auris and 
+          bcftools view -v 'snps' --threads ${task.cpus} $bcf \\
+              | bcftools filter --threads ${task.cpus} -s 'LowQual' -i '(QUAL/MAX(AD[:1]))>2.0 && FS<60 && MQ>=40 && DP>=10' -g8 -G10 -Ob \\
+              | bcftools filter --threads ${task.cpus} -s 'LowQual' -i '(MQSBZ > -2 || MQSBZ < 2)' -g8 -G10 -Ob \\
+              | bcftools filter --threads ${task.cpus} -S . -i 'FMT/GQ>20 & AD[:1]>=10' -Ob -o bcftools/fpg.filt.bcf
+
+
+          bcftools index bcftools/fpg.filt.bcf
+
+
+	"""
+  }
    else {
 
     """
