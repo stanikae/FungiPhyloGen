@@ -89,6 +89,27 @@ process FILTERSAMPLE {
           bcftools index bcftools/filtered/\${sampleNam}.filtered.bcf
 
     	  """
+        } else if(params.genus=="auris"){
+
+          """
+          #!/usr/bin/env bash
+
+          if ! [[ -d bcftools/filtered ]]; then mkdir -p bcftools/filtered; fi
+
+          sampleNam=`basename -s _call.bcf "$bcf"`
+
+
+          #bcftools view -v 'snps' --threads ${task.cpus} $bcf | \\
+           #             bcftools filter -i 'QUAL/DP>2.0 && FS<=60 && MQ>=30 && DP>=10' -g8 -G10 -Ob -o bcftools/filtered/\${sampleNam}.filtered.bcf
+
+          #bcftools view --threads ${task.cpus} $bcf -Ob -o bcftools/filtered/\${sampleNam}.filtered.bcf
+          bcftools view --threads ${task.cpus} $bcf | \\
+                bcftools +fill-tags -- -t FORMAT/VAF | \\
+                bcftools filter -i 'MQ>=40 && DP>=10 && QUAL>=30' -g8 -G10 -Ob -o bcftools/filtered/\${sampleNam}.filtered.bcf
+
+          bcftools index bcftools/filtered/\${sampleNam}.filtered.bcf
+
+          """
    	} else {
 
     	  """
