@@ -102,10 +102,10 @@ process FILTERSAMPLE {
           #bcftools view -v 'snps' --threads ${task.cpus} $bcf | \\
            #             bcftools filter -i 'QUAL/DP>2.0 && FS<=60 && MQ>=30 && DP>=10' -g8 -G10 -Ob -o bcftools/filtered/\${sampleNam}.filtered.bcf
 
-          #bcftools view --threads ${task.cpus} $bcf -Ob -o bcftools/filtered/\${sampleNam}.filtered.bcf
-          bcftools view --threads ${task.cpus} $bcf | \\
-                bcftools +fill-tags -- -t FORMAT/VAF | \\
-                bcftools filter -i 'MQ>=40 && DP>=10 && QUAL>=30' -g8 -G10 -Ob -o bcftools/filtered/\${sampleNam}.filtered.bcf
+          bcftools view --threads ${task.cpus} $bcf -Ob -o bcftools/filtered/\${sampleNam}.filtered.bcf
+          #bcftools view -v 'snps' --threads ${task.cpus} $bcf | \\
+          #      bcftools +fill-tags -- -t FORMAT/VAF | \\
+          #      bcftools filter -i 'MQ>=40 && DP>=10 && QUAL>=30' -g8 -G10 -Ob -o bcftools/filtered/\${sampleNam}.filtered.bcf
 
           bcftools index bcftools/filtered/\${sampleNam}.filtered.bcf
 
@@ -448,12 +448,12 @@ process SOFTFILTERVCF {
 
    	  bcftools index bcftools/fpg.filt.bcf
 
-    """
-   }
-   else if(params.genus=="auris") {
+     """
+    } 
+    else if(params.genus=="auris") {
 
 	
-          """
+     """
           #!/usr/bin/env bash
 
           if ! [[ -d bcftools ]]; then mkdir bcftools; fi
@@ -462,20 +462,21 @@ process SOFTFILTERVCF {
           nsamples=\$(bcftools query --list-samples $bcf | wc -l)
           nac=`awk "BEGIN {print (90/100)*\$nsamples}" | awk '{ print int(\$1) }'`
 
-	
+         #MQ>=40 && DP>=10 && QUAL>=30 && FS<60 && (MQSBZ > -2 || MQSBZ < 2)
+         # QUAL/DP>0.1 && FS<60.0 && MQ>=40 && DP>=10	
 	 #C. auris and 
           bcftools view -v 'snps' --threads ${task.cpus} $bcf \\
-              | bcftools filter --threads ${task.cpus} -s 'LowQual' -i '(QUAL/MAX(AD[:1]))>2.0 && FS<60 && MQ>=40 && DP>=10' -g8 -G10 -Ob \\
-              | bcftools filter --threads ${task.cpus} -s 'LowQual' -i '(MQSBZ > -2 || MQSBZ < 2)' -g8 -G10 -Ob \\
-              | bcftools filter --threads ${task.cpus} -S . -i 'FMT/GQ>20 & AD[:1]>=10' -Ob -o bcftools/fpg.filt.bcf
+              | bcftools +fill-tags -- -t FORMAT/VAF \\
+              | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'MQ>=40 && DP>=10 && QUAL>=30 && FS<60 && (MQSBZ > -2 || MQSBZ < 2) && FMT/AD[:1]>=10' -g8 -G10 -Ob \\
+              | bcftools filter --threads ${task.cpus} -S . -i 'FMT/GQ>=50' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
 
 
           bcftools index bcftools/fpg.filt.bcf
 
 
-	"""
-  }
-   else {
+     """
+   }
+    else {
 
     """
     #!/usr/bin/env bash
