@@ -68,7 +68,7 @@ process FILTERSAMPLE {
 
 
    script:
-        if(params.genus=="Candida"){
+        if(params.genus=="cparapsilosis"){
 
           """
           #!/usr/bin/env bash
@@ -89,7 +89,28 @@ process FILTERSAMPLE {
           bcftools index bcftools/filtered/\${sampleNam}.filtered.bcf
 
     	  """
-        } else if(params.genus=="auris"){
+         } else {
+
+          """
+          #!/usr/bin/env bash
+
+          if ! [[ -d bcftools/filtered ]]; then mkdir -p bcftools/filtered; fi
+
+          sampleNam=`basename -s _call.bcf "$bcf"`
+
+
+	  bcftools view --threads ${task.cpus} $bcf -Ob -o bcftools/filtered/\${sampleNam}.filtered.bcf
+
+          bcftools index bcftools/filtered/\${sampleNam}.filtered.bcf
+
+
+          """
+        }       
+}
+
+
+/*
+    } else if(params.genus=="auris"){
 
           """
           #!/usr/bin/env bash
@@ -131,7 +152,7 @@ process FILTERSAMPLE {
     """
    }   
 }
-
+*/
 
 /*
 process CALLVARIANTSgrp {
@@ -335,7 +356,7 @@ process SOFTFILTERVCF {
 
 
    script:
-	if(params.genus=="Candida"){
+	if(params.genus=="cparapsilosis"){
 
   	  """
     	  #!/usr/bin/env bash
@@ -450,7 +471,7 @@ process SOFTFILTERVCF {
 
      """
     } 
-    else if(params.genus=="auris") {
+    else if(params.genus=="wanomalus") {
 
 	
      """
@@ -464,7 +485,8 @@ process SOFTFILTERVCF {
 
          #MQ>=40 && DP>=10 && QUAL>=30 && FS<60 && (MQSBZ > -2 || MQSBZ < 2)
          # QUAL/DP>0.1 && FS<60.0 && MQ>=40 && DP>=10	
-	 #C. auris and 
+	 
+	  #Wickerhamomyces anomalus
           bcftools view -v 'snps' --threads ${task.cpus} $bcf \\
               | bcftools +fill-tags -- -t FORMAT/VAF \\
               | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'MQ>=40 && DP>=10 && QUAL>=30 && FS<60 && (MQSBZ > -2 || MQSBZ < 2) && FMT/AD[:1]>=10' -g8 -G10 -Ob \\
@@ -474,8 +496,34 @@ process SOFTFILTERVCF {
           bcftools index bcftools/fpg.filt.bcf
 
 
+      """
+     }
+     else if(params.genus=="cauris") {
+
      """
-   }
+          #!/usr/bin/env bash
+
+          if ! [[ -d bcftools ]]; then mkdir bcftools; fi
+
+          # get count of samples in bcf file
+          nsamples=\$(bcftools query --list-samples $bcf | wc -l)
+          nac=`awk "BEGIN {print (90/100)*\$nsamples}" | awk '{ print int(\$1) }'`
+
+         #MQ>=40 && DP>=10 && QUAL>=30 && FS<60 && (MQSBZ > -2 || MQSBZ < 2)
+         # QUAL/DP>0.1 && FS<60.0 && MQ>=40 && DP>=10
+
+          #C. auris
+          bcftools view -v 'snps' --threads ${task.cpus} $bcf \\
+              | bcftools +fill-tags -- -t FORMAT/VAF \\
+              | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'MQ>=40 && DP>=10 && QUAL>=30 && FS<60 && (MQSBZ > -2 || MQSBZ < 2) && FMT/AD[:1]>=10' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
+           #   | bcftools filter --threads ${task.cpus} -S . -i 'FMT/AD[:1]>=10' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
+
+
+          bcftools index bcftools/fpg.filt.bcf
+
+
+     """
+    }
     else {
 
     """
