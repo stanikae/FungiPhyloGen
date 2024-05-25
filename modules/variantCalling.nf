@@ -511,12 +511,15 @@ process SOFTFILTERVCF {
 
          #MQ>=40 && DP>=10 && QUAL>=30 && FS<60 && (MQSBZ > -2 || MQSBZ < 2)
          # QUAL/DP>0.1 && FS<60.0 && MQ>=40 && DP>=10
-
+         # MQ>=40 && DP>=10 && QUAL>=30 && FS<60 && (MQSBZ > -2 || MQSBZ < 2) && FMT/AD[:1]>=10
+	 # MycoSNP v1.5: QD < 2.0 || FS > 60.0 || MQ < 40.0 || DP < 10
+	 # FungiPhylogen C. auris settings: bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'QUAL/DP>0.1 || MQ>=40 || DP>=10' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf 
+             # | bcftools filter --threads ${task.cpus} -S . -i 'FMT/GQ>50 & FMT/AD[:1]>=10' -Ob \\
           #C. auris
           bcftools view -v 'snps' --threads ${task.cpus} $bcf \\
               | bcftools +fill-tags -- -t FORMAT/VAF \\
-              | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'MQ>=40 && DP>=10 && QUAL>=30 && FS<60 && (MQSBZ > -2 || MQSBZ < 2) && FMT/AD[:1]>=10' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
-           #   | bcftools filter --threads ${task.cpus} -S . -i 'FMT/AD[:1]>=10' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
+              | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'QUAL/DP>0.85 || MQ>=40 || DP>=10 || FS<=60' -g8 -G10 -Ob \\
+              | bcftools filter -s 'NoVars' -e 'AC==0' -Ob -o bcftools/fpg.filt.bcf
 
 
           bcftools index bcftools/fpg.filt.bcf
