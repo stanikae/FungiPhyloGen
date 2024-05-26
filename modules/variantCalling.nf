@@ -518,7 +518,7 @@ process SOFTFILTERVCF {
           #C. auris
           bcftools view -v 'snps' --threads ${task.cpus} $bcf \\
               | bcftools +fill-tags -- -t FORMAT/VAF \\
-              | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'QUAL/DP>0.85 || MQ>=40 || DP>=10 || FS<=60' -g8 -G10 -Ob \\
+              | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'QUAL/DP>1.75 || MQ>=40' -g8 -G10 -Ob \\
               | bcftools filter -s 'NoVars' -e 'AC==0' -Ob -o bcftools/fpg.filt.bcf
 
 
