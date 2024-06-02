@@ -58,7 +58,7 @@ Rscript $SCRIPTPATH/rename_sample_names.R "$2"
 
 # create final sample sheet (index)
 indexDir=$(dirname "$2")
-newIndex="$indexDir"/sample_index_new.csv
+newIndex="$indexDir"/samplesheet.csv
 create_index "$1" "$newIndex"
 
 

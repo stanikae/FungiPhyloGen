@@ -410,7 +410,43 @@ process SOFTFILTERVCF {
 
      """
     }
-    else {
+    else if(params.genus=="caurisx") {
+
+     """
+          #!/usr/bin/env bash
+
+          if ! [[ -d bcftools ]]; then mkdir bcftools; fi
+
+          # get count of samples in bcf file
+          nsamples=\$(bcftools query --list-samples $bcf | wc -l)
+          nac=`awk "BEGIN {print (90/100)*\$nsamples}" | awk '{ print int(\$1) }'`
+
+         #MQ>=40 && DP>=10 && QUAL>=30 && FS<60 && (MQSBZ > -2 || MQSBZ < 2)
+         # QUAL/DP>0.1 && FS<60.0 && MQ>=40 && DP>=10
+         # MQ>=40 && DP>=10 && QUAL>=30 && FS<60 && (MQSBZ > -2 || MQSBZ < 2) && FMT/AD[:1]>=10
+         # MycoSNP v1.5: QD < 2.0 || FS > 60.0 || MQ < 40.0 || DP < 10
+         # FungiPhylogen C. auris settings: bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'QUAL/DP>0.1 || MQ>=40 || DP>=10' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf
+             # | bcftools filter --threads ${task.cpus} -S . -i 'FMT/GQ>50 & FMT/AD[:1]>=10' -Ob \\
+
+
+          #C. auris
+
+           bcftools view -v 'snps' --threads ${task.cpus} $bcf \\
+              | bcftools +fill-tags -- -t FORMAT/VAF \\
+              | bcftools filter --threads ${task.cpus} -s 'LowMQ' -i 'MQ>=40' -g8 -G10 -Ob \\
+              | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'QUAL>=30' -g8 -G10 -Ob \\
+              | bcftools filter --threads ${task.cpus} -s 'LowDP' -i 'DP>=10' -g8 -G10 -Ob \\
+              | bcftools filter --threads ${task.cpus} -s 'LowFS' -i 'FS<60' -g8 -G10 -Ob \\
+              | bcftools filter --threads ${task.cpus} -s 'HighMQSBZ' -i '(MQSBZ > -2 || MQSBZ < 2)' -g8 -G10 -Ob \\
+              | bcftools filter --threads ${task.cpus} -s 'LowQD' -i 'QUAL/DP>0.5' -g8 -G10 -Ob \\
+              | bcftools filter -s 'NoVars' -e 'AC==0' -Ob -o bcftools/fpg.filt.bcf
+
+          bcftools index bcftools/fpg.filt.bcf
+
+
+     """
+   } 
+   else {
 
     """
     #!/usr/bin/env bash
