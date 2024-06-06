@@ -6,7 +6,9 @@ outVCF=$3
 outFile=$4
 
 
-jar_path=/home/stan/anaconda3/envs/snpsift/share/snpsift-5.1-0
+CONDA_BASE=$(conda info --base)
+
+jar_path=$(CONDA_BASE)/envs/fpgTargetedGeneAnalysis/share/snpsift-5.1-0
 
 cat $snpeffVCF | \
 	java -jar $jar_path/SnpSift.jar filter --set $geneList "(ANN[*].EFFECT has 'missense_variant') && (ANN[*].GENE in SET[0]) " > $outVCF
