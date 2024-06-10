@@ -359,20 +359,46 @@ process SOFTFILTERVCF {
 
           #| bcftools filter --threads ${task.cpus} -s 'LowQD' -i 'QUAL/DP>0.035' -g8 -G10 -Ob \\
              # | bcftools filter --threads ${task.cpus} -S . -i 'FMT/GQ>=50' -Ob \\
+             #
+             # | bcftools filter --threads ${task.cpus} -S . -i 'FMT/VAF>=0.8' \\
+             # | bcftools filter --threads ${task.cpus} -S . -i 'FMT/GQ>=50' \\
+             
+             # | bcftools filter --threads ${task.cpus} -S . -i 'FMT/DP>=10' \\
+             #
+             # | bcftools filter --threads ${task.cpus} -s 'LowFMTDP' -i 'AVG(FMT/DP)>=10' -g8 -G10 -Ob \\
 
+            #  | bcftools +fill-tags -- -t F_MISSING | bcftools filter -s 'MISSINGVAR' -i 'F_MISSING < 0.4' -Ob \\
+         # | bcftools filter --threads ${task.cpus} -S . -i 'FMT/VAF>=0.8' \\
+         # | bcftools filter --threads ${task.cpus} -S . -i 'FMT/AD[:1]>=10' \\
+
+
+        #  bcftools view -v 'snps' --threads ${task.cpus} $bcf \\
+        #      | bcftools +fill-tags -- -t FORMAT/VAF \\
+        #      | bcftools filter --threads ${task.cpus} -s 'LowMQ' -i 'MQ>=40 || QUAL>=30 || DP>=10 || FS<60 || QUAL/DP>0.1' -g8 -G10 -Ou \\
+        #      | bcftools filter --threads ${task.cpus} -s 'HighMQSBZ' -i '(MQSBZ > -2 || MQSBZ < 2)' -g8 -G10 -Ou \\
+        #      | bcftools filter --threads ${task.cpus} -s 'LowGQ' -i 'AVG(FMT/GQ)>=50' -g8 -G10 -Ou \\
+        #      | bcftools +fill-tags -- -t AF | bcftools filter -s 'LowAF' -i 'INFO/AF>=0.75' -Ou \\
+        #      | bcftools +fill-tags -- -t 'FORMAT/DP:1=int(smpl_sum(FORMAT/AD))' \\
+        #      | bcftools filter --threads ${task.cpus} -S . -i 'FMT/DP>=30' -Ou \\
+        #      | bcftools +fill-tags -- -t F_MISSING | bcftools filter -s 'MISSINGVAR' -i 'F_MISSING < 0.05' -Ou \\
+        #      | bcftools filter -s 'NoVars' -e 'AC==0' -Ob -o bcftools/fpg.filt.bcf
+
+
+	
           bcftools view -v 'snps' --threads ${task.cpus} $bcf \\
               | bcftools +fill-tags -- -t FORMAT/VAF \\
-              | bcftools filter --threads ${task.cpus} -s 'LowMQ' -i 'MQ>=40' -g8 -G10 -Ob \\
-              | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'QUAL>=30' -g8 -G10 -Ob \\
-              | bcftools filter --threads ${task.cpus} -s 'LowDP' -i 'DP>=10' -g8 -G10 -Ob \\
-              | bcftools filter --threads ${task.cpus} -s 'LowFS' -i 'FS<60' -g8 -G10 -Ob \\
-              | bcftools filter --threads ${task.cpus} -s 'HighMQSBZ' -i '(MQSBZ > -2 || MQSBZ < 2)' -g8 -G10 -Ob \\
-              | bcftools filter --threads ${task.cpus} -s 'LowQD' -i 'QUAL/DP>0.035' -g8 -G10 -Ob \\
-              | bcftools filter --threads ${task.cpus} -s 'LowAD' -i 'AVG(FMT/AD[:1])>=10' -g8 -G10 -Ob \\
-              | bcftools filter --threads ${task.cpus} -S . -i 'FMT/GQ>=20' \\
-              | bcftools filter --threads ${task.cpus} -S . -i 'FMT/AD[:1]>=10' \\
+              | bcftools filter --threads ${task.cpus} -s 'LowMQ' -i 'MQ>=40' -g8 -G10 -Ou \\
+              | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'QUAL>=30' -g8 -G10 -Ou \\
+              | bcftools filter --threads ${task.cpus} -s 'LowDP' -i 'DP>=10' -g8 -G10 -Ou \\
+              | bcftools filter --threads ${task.cpus} -s 'LowFS' -i 'FS<60' -g8 -G10 -Ou \\
+              | bcftools filter --threads ${task.cpus} -s 'HighMQSBZ' -i '(MQSBZ > -2 || MQSBZ < 2)' -g8 -G10 -Ou \\
+              | bcftools filter --threads ${task.cpus} -s 'LowQD' -i 'QUAL/DP>0.1' -g8 -G10 -Ou \\
+              | bcftools filter --threads ${task.cpus} -s 'LowGQ' -i 'AVG(FMT/GQ)>=50' -g8 -G10 -Ou \\
+              | bcftools +fill-tags -- -t AF | bcftools filter -s 'LowAF' -i 'INFO/AF>=0.75' -Ou \\
+              | bcftools +fill-tags -- -t 'FORMAT/DP:1=int(smpl_sum(FORMAT/AD))' \\
+              | bcftools filter --threads ${task.cpus} -S . -i 'FMT/DP>=30' -Ou \\
+              | bcftools +fill-tags -- -t F_MISSING | bcftools filter -s 'MISSINGVAR' -i 'F_MISSING < 0.4' -Ou \\
               | bcftools filter -s 'NoVars' -e 'AC==0' -Ob -o bcftools/fpg.filt.bcf
-
 
 
           bcftools index bcftools/fpg.filt.bcf
@@ -398,17 +424,21 @@ process SOFTFILTERVCF {
 	 # FungiPhylogen C. auris settings: bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'QUAL/DP>0.1 || MQ>=40 || DP>=10' -g8 -G10 -Ob -o bcftools/fpg.filt.bcf 
              # | bcftools filter --threads ${task.cpus} -S . -i 'FMT/GQ>50 & FMT/AD[:1]>=10' -Ob \\
    
-
+         # | bcftools filter -s 'MISSINGVAR' -i 'F_MISSING<0.1' -Ob
+         
           #C. auris
          
            bcftools view -v 'snps' --threads ${task.cpus} $bcf \\
               | bcftools +fill-tags -- -t FORMAT/VAF \\
-              | bcftools filter --threads ${task.cpus} -s 'LowMQ' -i 'MQ>=40' -g8 -G10 -Ob \\
-              | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'QUAL>=30' -g8 -G10 -Ob \\
-              | bcftools filter --threads ${task.cpus} -s 'LowDP' -i 'DP>=10' -g8 -G10 -Ob \\
-              | bcftools filter --threads ${task.cpus} -s 'LowFS' -i 'FS<60' -g8 -G10 -Ob \\
-              | bcftools filter --threads ${task.cpus} -s 'HighMQSBZ' -i '(MQSBZ > -2 || MQSBZ < 2)' -g8 -G10 -Ob \\
-              | bcftools filter --threads ${task.cpus} -s 'LowQD' -i 'QUAL/DP>0.035' -g8 -G10 -Ob \\
+              | bcftools filter --threads ${task.cpus} -s 'LowMQ' -i 'MQ>=40' -g8 -G10 -Ou \\
+              | bcftools filter --threads ${task.cpus} -s 'LowQual' -i 'QUAL>=30' -g8 -G10 -Ou \\
+              | bcftools filter --threads ${task.cpus} -s 'LowDP' -i 'DP>=10' -g8 -G10 -Ou \\
+              | bcftools filter --threads ${task.cpus} -s 'LowFS' -i 'FS<60' -g8 -G10 -Ou \\
+              | bcftools filter --threads ${task.cpus} -s 'HighMQSBZ' -i '(MQSBZ > -2 || MQSBZ < 2)' -g8 -G10 -Ou \\
+              | bcftools filter --threads ${task.cpus} -s 'LowQD' -i 'QUAL/DP>0.035' -g8 -G10 -Ou \\
+              | bcftools +fill-tags -- -t 'FORMAT/DP:1=int(smpl_sum(FORMAT/AD))' \\
+              | bcftools filter --threads ${task.cpus} -s 'LowFMTDP' -i 'AVG(FMT/DP)>=20' -g8 -G10 -Ou \\
+              | bcftools +fill-tags -- -t F_MISSING | bcftools filter -s 'MISSINGVAR' -i 'F_MISSING < 0.4' -Ou \\
               | bcftools filter -s 'NoVars' -e 'AC==0' -Ob -o bcftools/fpg.filt.bcf 
 
           bcftools index bcftools/fpg.filt.bcf

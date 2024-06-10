@@ -14,7 +14,7 @@ cat $snpeffVCF | \
 	java -jar $jar_path/SnpSift.jar filter --set $geneList "(ANN[*].EFFECT has 'missense_variant') && (ANN[*].GENE in SET[0]) " > $outVCF
 
 
-conda activate fpgCallVariants
+# conda activate fpgCallVariants
 
 SAMPLESVCF=$(bcftools query -l $outVCF | tr '\n' '|')
 
