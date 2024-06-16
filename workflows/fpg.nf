@@ -202,7 +202,6 @@ workflow FUNGIPHYLOGEN {
 
   // perform snp annotations
    WFANNOTATESNP(BCFTOOLS.out.pass_vcf,file("$params.refseq"),file("$params.gbk"))
-    
 
   // perform de novo ascsembly
   //DENOVO(trim.out.rds)  
