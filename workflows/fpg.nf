@@ -1,48 +1,72 @@
 #!/usr/bin/env nextflow
-
 nextflow.enable.dsl=2
 
-/*
-//command to launch nextflow fpg-nf workflow
-refseq=/scratch/sysuser/stanford/test-data/ref-genomes/ncbi_dataset/data/GCA_000150115.1/GCA_000150115.1_ASM15011v1_genomic.fna
-gbk=/scratch/sysuser/stanford/test-data/ref-genomes/ncbi_dataset/data/GCA_000150115.1/genomic.gbff
-confg=/scratch/sysuser/stanford/git-repos/FungiPhyloGen/fpg_test.config
-nextflow run main_fpg.nf --refseq $refseq --gbk $gbk --prjName "HistoAnalysis" -c $confg -with-conda true
-*/
+
+
+// --- WORKFLOW: FUNGIPHYLOGEN ---
 
 
 /*
-==================================================================
-	CHECK INPUTS
-==================================================================
+================================================================
+        Load Modules
+================================================================
 */
 
-// Check mandatory parameters
-if (params.cleanreadsDir) { 
-	reads_ch = Channel.fromFilePairs("$params.cleanreadsDir/*_val_{1,2}.fq.gz", checkIfExists: true) 
-} else if (params.readsDir) { 
-	reads_ch = Channel.fromPath("$params.readsDir/**.f*q.gz", checkIfExists: true)
-	
-	// check if sample sheet file has been provided
-        if (params.index) { index_ch = Channel.fromPath(params.index) } else { exit 1, 'Please specify input samplesheet...' } 
+include { fqc as FASTQCRAW } from '../modules/fastqc_test.nf' addParams(fqcOut: "$params.resultsDir/fqc_raw")
+include { trimReads as TRIMREADS } from '../modules/trimreads.nf'
+include { fqc as FASTQCCLEAN } from '../modules/fastqc_test.nf' addParams(fqcOut: "$params.resultsDir/fqc_clean")
+include { mqc as MULTIQCRAW } from '../modules/multiqc.nf' addParams(mqcOut: "$params.resultsDir/multiqc/raw", fileN: "${params.prjName}_raw")
+include { mqc as MULTIQCCLEAN } from '../modules/multiqc.nf' addParams(mqcOut: "$params.resultsDir/multiqc/clean", fileN: "${params.prjName}_clean")
+include { GETREPEATS } from '../modules/indexref.nf'
+include { REPEATSBED } from '../modules/indexref.nf'
+include { MASKREF } from '../modules/indexref.nf' addParams(refMasked: "$params.resultsDir/masked")
+include { INDEXREF } from '../modules/indexref.nf' addParams(refIndex: "$params.resultsDir/index")
+include { SPADES } from '../modules/denovo.nf' addParams(deNovo: "$params.resultsDir/assemblies")
+include { ALIGNBWAMEM } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
+include { MARKDUPS } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
+include { SORTMARKED } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
+include { SAMINDEX } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
+include { CALLVARIANTS } from '../modules/callVariants.nf' addParams(bcftl: "$params.resultsDir/variants")
+include { FILTERSAMPLE } from '../modules/callVariants.nf' addParams(bcftl: "$params.resultsDir/variants")
+//include { CALLVARIANTSgrp } from '../modules/callVariants.nf' addParams(bcftl: "$params.resultsDir/variants")
+//include { INDEXBCF } from '../modules/callVariants.nf' addParams(bcftl: "$params.resultsDir/variants")
+include { REHEADERVCF } from '../modules/callVariants.nf' addParams(bcftl: "$params.resultsDir/variants")
+include { SOFTFILTERVCF } from '../modules/callVariants.nf' addParams(bcftl: "$params.resultsDir/variants")
+include { BCFNORM } from '../modules/callVariants.nf' addParams(bcftl: "$params.resultsDir/variants")
+include { FILTERVCF } from '../modules/callVariants.nf' addParams(bcftl: "$params.resultsDir/variants")
+include { VCFSNPS2FASTA } from '../modules/callVariants.nf' addParams(bcftl: "$params.resultsDir/variants")
+include { VCF2PHYLIP } from '../modules/callVariants.nf' addParams(bcftl: "$params.resultsDir/variants")
+include { RUNIQTREE } from '../modules/phyloTrees.nf' addParams(iq: "$params.resultsDir/iqtree")
+include { RUNRAPIDNJ } from '../modules/phyloTrees.nf' addParams(nj: "$params.resultsDir/rapidnj")
+include { RUNSNPDISTS } from '../modules/phyloTrees.nf' addParams(dist: "$params.resultsDir/snpdists")
+include { RUNSNPEFF } from '../modules/annotate.nf' addParams(ann: "$params.resultsDir/snpeff")
 
-} else { 
-	exit 1, 'Please provide path to raw reads directory in config file...' 
-}
+
+/*
+========================================================================================
+    Import Subworkflows
+========================================================================================
+*/
 
 
-// Set parameters
-params.trm = "$params.resultsDir/clean_reads"
+include { trim } from '../modules/trimreads.nf'
+// include { ALN } from '../modules/bwaAlign.nf'
+// include { TALN } from '../modules/bwaAlign.nf'
+include { BCFTOOLS } from '../modules/callVariants.nf'
+include { WFIQTREE } from '../modules/phyloTrees.nf'
+include { WFANNOTATESNP } from '../modules/annotate.nf'
+include { DENOVO } from '../modules/denovo.nf'
+
 
 
 /*
 =================================================================
-	Create directories - OPTIONAL
+        Create directories - OPTIONAL
 =================================================================
 */
 
 params.fqcCln = file("$params.resultsDir/fqc_clean")
-params.fqcCln.mkdirs() ? ! params.fqcCln.exists() : 'Directory already exists' 
+params.fqcCln.mkdirs() ? ! params.fqcCln.exists() : 'Directory already exists'
 params.bwaMem = file("$params.resultsDir/align")
 params.bcftl = file("$params.resultsDir/variants")
 params.iq = file("$params.resultsDir/iqtree")
@@ -59,7 +83,7 @@ params.deNovo.mkdirs() ? ! params.deNovo.exists() : 'Directory already exists'
 
 /*
 =================================================================
-    	Define files 
+        Define files
 =================================================================
 */
 
@@ -67,56 +91,6 @@ contaminants = "$params.cacheDir/trimReads/opt/fastqc*/Configuration/contaminant
 adapters = "$params.cacheDir/trimReads/opt/fastqc*/Configuration/adapter_list.txt"
 
 
-/*
-================================================================
-	Load Modules
-================================================================
-*/
-
-include { fqc as FASTQCRAW } from '../modules/fastqc_test.nf' addParams(fqcOut: "$params.resultsDir/fqc_raw") 
-include { trimReads as TRIMREADS } from '../modules/trimreads.nf'
-include { fqc as FASTQCCLEAN } from '../modules/fastqc_test.nf' addParams(fqcOut: "$params.resultsDir/fqc_clean")
-include { mqc as MULTIQCRAW } from '../modules/multiqc.nf' addParams(mqcOut: "$params.resultsDir/multiqc/raw", fileN: "${params.prjName}_raw")
-include { mqc as MULTIQCCLEAN } from '../modules/multiqc.nf' addParams(mqcOut: "$params.resultsDir/multiqc/clean", fileN: "${params.prjName}_clean")
-include { GETREPEATS } from '../modules/indexref.nf'
-include { REPEATSBED } from '../modules/indexref.nf'
-include { MASKREF } from '../modules/indexref.nf' addParams(refMasked: "$params.resultsDir/masked")
-include { INDEXREF } from '../modules/indexref.nf' addParams(refIndex: "$params.resultsDir/index")
-include { SPADES } from '../modules/denovo.nf' addParams(deNovo: "$params.resultsDir/assemblies")
-include { ALIGNBWAMEM } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
-include { MARKDUPS } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
-include { SORTMARKED } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
-include { SAMINDEX } from '../modules/bwaAlign.nf' addParams(bwaMem: "$params.resultsDir/align")
-include { CALLVARIANTS } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants") 
-include { FILTERSAMPLE } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
-//include { CALLVARIANTSgrp } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
-//include { INDEXBCF } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
-include { REHEADERVCF } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
-include { SOFTFILTERVCF } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
-include { BCFNORM } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
-include { FILTERVCF } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
-include { VCFSNPS2FASTA } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
-include { VCF2PHYLIP } from '../modules/variantCalling.nf' addParams(bcftl: "$params.resultsDir/variants")
-include { RUNIQTREE } from '../modules/phyloTrees.nf' addParams(iq: "$params.resultsDir/iqtree")
-include { RUNRAPIDNJ } from '../modules/phyloTrees.nf' addParams(nj: "$params.resultsDir/rapidnj")
-include { RUNSNPDISTS } from '../modules/phyloTrees.nf' addParams(dist: "$params.resultsDir/snpdists")
-include { RUNSNPEFF } from '../modules/annotate.nf' addParams(ann: "$params.resultsDir/snpeff")
-
-
-/*
-========================================================================================
-    Import Subworkflows
-========================================================================================
-*/
-
-
-include { trim } from '../modules/trimreads.nf'
-include { ALN } from '../modules/bwaAlign.nf'
-include { TALN } from '../modules/bwaAlign.nf'
-include { BCFTOOLS } from '../modules/variantCalling.nf'
-include { WFIQTREE } from '../modules/phyloTrees.nf'
-include { WFANNOTATESNP } from '../modules/annotate.nf'
-include { DENOVO } from '../modules/denovo.nf'
 
 
 /*
@@ -128,83 +102,75 @@ include { DENOVO } from '../modules/denovo.nf'
 
 workflow FUNGIPHYLOGEN {
 
-  // prepare and index ref file
-  GETREPEATS(file("$params.refseq"))
-  REPEATSBED(GETREPEATS.out.delta)
-  MASKREF(file("$params.refseq"),REPEATSBED.out.rpts_bed)
-  INDEXREF(MASKREF.out.masked_fa)
+    // --- INPUT CHANNEL FROM SAMPLESHEET ---
+    if (!params.samplesheet) {
+        exit 1, "Input samplesheet not specified. Please provide a path using --samplesheet <file.csv>"
+    }
+
+    Channel
+        .fromPath(params.samplesheet)
+        .splitCsv(header: true, sep: ',')
+        .map { row ->
+            def meta = [id: row.sample]
+            def reads = [
+                file(row.fastq_1, checkIfExists: true),
+                file(row.fastq_2, checkIfExists: true)
+            ]
+            return [meta, reads]
+        }
+        .set { ch_input_reads }
+
+    // --- REFERENCE PREPARATION ---
+    GETREPEATS(file("$params.refseq"))
+    REPEATSBED(GETREPEATS.out.delta)
+    MASKREF(file("$params.refseq"),REPEATSBED.out.rpts_bed)
+    ch_ref_masked = MASKREF.out.masked_fa
+    INDEXREF(ch_ref_masked)
+    ch_ref_indexed = INDEXREF.out.prs
 
 
-  // clean raw reads
-  if (params.cleanreadsDir) {
+    // --- CONDITIONAL READ TRIMMING ---
+    // This block intelligently decides whether to run the TRIM_READS step
+    if (params.skip_trimming) {
+        log.info "Skipping read trimming as requested by --skip_trimming."
+        ch_reads_for_alignment = ch_input_reads
+    } else {
+        log.info "Trimming raw reads."
 
-	//perform ref based mapping using previously cleaned reads
-        TALN(INDEXREF.out.prs,reads_ch)
-        MARKDUPS(TALN.out.bam)
+        // --- MULTIQC ON RAW READS ---
+        FASTQCRAW(file("$contaminants"),file("$adapters"),ch_input_reads)
+        MULTIQCRAW(FASTQCRAW.out.collect())
 
-  }
+        trim(ch_input_reads)
+        ch_reads_for_alignment = trim.out.rds
 
-  if (params.readsDir) {
-	
-  	// run fastqc on raw reads
-  	FASTQCRAW(file("$contaminants"),file("$adapters"),reads_ch)
+        // --- MULTIQC ON CLEAN READS ---
+        FASTQCCLEAN(file("$contaminants"),file("$adapters"),ch_reads_for_alignment) //trim.out.rds.collect())
+        MULTIQCCLEAN(FASTQCCLEAN.out.collect())
 
-  	// trim reads using trim_galore
-  	trim(index_ch)
+    }
 
-   	// run fastqc on clean reads
-  	FASTQCCLEAN(file("$contaminants"),file("$adapters"),trim.out.rds.collect())
+    
+    // --- ALIGNMENT ---
+    ALN(ch_ref_indexed,ch_reads_for_alignment) //ch_ref_indexed.prs.collect()
+    MARKDUPS(ALN.out.bam)
+    SORTMARKED(MARKDUPS.out.marked)
+    ch_sorted_bam = SORTMARKED.out.sorted 
+    SAMINDEX(ch_sorted_bam)
 
-	 // run multiqc on raw reads
-  	MULTIQCRAW(FASTQCRAW.out.collect())
+    // --- VARIANT CALLING, FILTERING & CONVERSION ---
+    BCFTOOLS(ch_ref_masked,ch_sorted_bam)
 
-  	// run multiqc on clean reads
-  	MULTIQCCLEAN(FASTQCCLEAN.out.collect())
+    // --- PHYLOGENY ---
+    WFIQTREE(BCFTOOLS.out.msa_snp, BCFTOOLS.out.aln_snp)
+    RUNRAPIDNJ(BCFTOOLS.out.msa_snp)
 
-	// perform ref based mapping
-	ALN(INDEXREF.out.prs,trim.out.rds)
-
-	MARKDUPS(ALN.out.bam)
-  }
- 
-	
-
-/*
-  // perform ref based mapping
-  if(trim.out.rds.ifEmpty('NADA').endsWith('NADA'){
- 	 ALN(INDEXREF.out.prs,reads_ch)
-  } else {
-  	ALN(INDEXREF.out.prs,trim.out.rds)
-  }
-*/
-
-  //MARKDUPS(ALN.out.bam)
-  SORTMARKED(MARKDUPS.out.marked)
-  SAMINDEX(SORTMARKED.out.sorted)
+    // --- SNP ANNOTATION ---
+    WFANNOTATESNP(BCFTOOLS.out.pass_vcf, file(params.refseq), file(params.gbk))
 
 
-  // call and filter variants; convert vcf to MSA of variant sites only
-  //BCFTOOLS(file("$params.refseq"),SORTMARKED.out.sorted.collect())
-  BCFTOOLS(file("$params.refseq"),SORTMARKED.out.sorted)
-
-
-  // run iqtree
-  if(params.genus=="Candida"){
-      // RUNRAPIDNJ(BCFTOOLS.out.aln_fold)
-      // WFIQTREE(BCFTOOLS.out.aln_fold)
-      RUNRAPIDNJ(BCFTOOLS.out.msa_snp)
-      WFIQTREE(BCFTOOLS.out.msa_snp,BCFTOOLS.out.aln_snp)
-  }else{
-      RUNRAPIDNJ(BCFTOOLS.out.msa_snp)
-      WFIQTREE(BCFTOOLS.out.msa_snp,BCFTOOLS.out.aln_snp)
-  }
-
-
-  // perform snp annotations
-   WFANNOTATESNP(BCFTOOLS.out.pass_vcf,file("$params.refseq"),file("$params.gbk"))
-
-  // perform de novo ascsembly
-  //DENOVO(trim.out.rds)  
+   // --- DE NOVO ASSEMBLY ---
+   //DENOVO(ch_reads_for_alignment)  
   
 }
 
