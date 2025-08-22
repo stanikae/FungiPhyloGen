@@ -159,7 +159,7 @@ workflow FUNGIPHYLOGEN {
     SAMINDEX(ch_sorted_bam)
 
     // --- VARIANT CALLING, FILTERING & CONVERSION ---
-    BCFTOOLS(ch_ref_masked,ch_sorted_bam)
+    BCFTOOLS(ch_sorted_bam, ch_ref_masked)
 
     // --- PHYLOGENY ---
     WFIQTREE(BCFTOOLS.out.msa_snp, BCFTOOLS.out.aln_snp)
