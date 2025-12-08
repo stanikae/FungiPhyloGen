@@ -3,7 +3,7 @@ nextflow.enable.dsl=2
 
 
 process ALIGNBWAMEM {
-  //tag "$sampleId"
+  tag "${meta.id}"
   
   cpus 8
   executor 'slurm'
@@ -11,76 +11,65 @@ process ALIGNBWAMEM {
   conda "$params.cacheDir/fpgAlign"
   publishDir "$params.bwaMem", mode: 'copy'
 
-
   input:
-    val ready
-    tuple val(sampleId), file(reads)
+    val ready 
+    // FIX: Accept meta map
+    tuple val(meta), path(reads)
 
   output:
-    tuple val(sampleId), path("bwa/*.bam") , emit: aln_bam
+    // FIX: Emit meta map
+    tuple val(meta), path("bwa/*.bam") , emit: aln_bam
 
   script:
-  
   """
   #!/usr/bin/env bash
-  
+
   if ! [[ -d bwa ]]; then mkdir bwa; fi
 
   index=`find -L "$workDir" -name "*.bwt" | head -n1 | sed 's/.bwt//'`
  
+  # FIX: Use meta.id
   bwa mem -M -t ${task.cpus} \\
   \$index \\
   $reads \\
-  | samtools sort --threads ${task.cpus} --output-fmt BAM -o bwa/${sampleId}.bam -
-
+  | samtools sort --threads ${task.cpus} --output-fmt BAM -o bwa/${meta.id}.bam -
   """
 }
 
 
-
 process MARKDUPS {
+  tag "${meta.id}"
 
   cpus 12
   executor 'slurm'
   
-  //tag "$sampleId"
-
   conda "$params.cacheDir/fpgAlign"
   publishDir "$params.bwaMem", mode: 'copy'
 
   input:
-    tuple val(sampleId), file(bam)
-
+    tuple val(meta), path(bam)
 
   output:
-    //tuple val(sampleId), path("picard/*marked.bam"), emit: marked
-    //tuple val(sampleId), path("picard/*_metrics.txt"), emit: dups_metric
-
-      tuple val(sampleId), path('*marked.bam'), emit: marked
-      path('*_metrics.txt'), emit: dups_metric      
-     
+    tuple val(meta), path('*marked.bam'), emit: marked
+    path('*_metrics.txt'), emit: dups_metric      
+      
   script:
-
   """ 
    #!/usr/bin/env bash
    
- 
+   # FIX: Use meta.id for output filenames
    picard MarkDuplicates \\
    --INPUT $bam \\
-   --OUTPUT ${sampleId}_marked.bam \\
-   --METRICS_FILE ${sampleId}_metrics.txt \\
+   --OUTPUT ${meta.id}_marked.bam \\
+   --METRICS_FILE ${meta.id}_metrics.txt \\
    --ASSUME_SORTED true \\
    --VALIDATION_STRINGENCY SILENT
-
-
   """
 }
-
 
 
 process SORTMARKED {
-  //tag "$bam"
-  //tag "$sampleId"
+  tag "${meta.id}"
 
   cpus 10
   executor 'slurm'
@@ -89,30 +78,24 @@ process SORTMARKED {
   publishDir "$params.bwaMem", mode: 'copy'
 
   input:
-    //file(bam)
-    tuple val(sampleId), path(bam)
-
+    tuple val(meta), path(bam)
 
   output:
-      path('*sorted_marked.bam'), emit: sorted
+    tuple val(meta), path('*sorted_marked.bam'), emit: sorted
 
   script:
-
   """
    #!/usr/bin/env bash
    
-   samtools sort --threads ${task.cpus} --output-fmt BAM "$bam" -o ${sampleId}_sorted_marked.bam
-   
+   # FIX: Use meta.id
+   samtools sort --threads ${task.cpus} --output-fmt BAM "$bam" -o ${meta.id}_sorted_marked.bam
   """
-   
 }
 
 
-
 process SAMINDEX {
-  //tag "$bam"
-  //tag "$sampleId"
-  
+  tag "${meta.id}"
+
   cpus 10
   executor 'slurm'
 
@@ -120,24 +103,21 @@ process SAMINDEX {
   publishDir "$params.bwaMem", mode: 'copy'
 
   input:
-    file(bam)
-
+    tuple val(meta), path(bam)
 
   output:
-      path('*.bai'), emit: bai
+    tuple val(meta), path('*.bai'), emit: bai
 
   script:
-
   """
    #!/usr/bin/env bash
 
    samtools index -@ ${task.cpus} $bam -o ${bam}.bai
-
   """
-
 }
 
-
+// --- WORKFLOWS ---
+// Bypassed in main script, but updated for consistency
 
 workflow ALN {
   take:
@@ -145,28 +125,8 @@ workflow ALN {
     cln
     
   main:
-     ALIGNBWAMEM(vl,
-       cln
-          .map { file -> def key = file.name.toString().tokenize('_').get(0).replace('[','')
-             return tuple(key, file)}
-          //.groupTuple( )
-     )
+     ALIGNBWAMEM(vl, cln)
      
   emit:
     bam = ALIGNBWAMEM.out.aln_bam
-    
-}
-
-
-workflow TALN {
-  take:
-    vl
-    ch_in
-
-  main:
-     ALIGNBWAMEM(vl,ch_in )
-
-  emit:
-    bam = ALIGNBWAMEM.out.aln_bam
-
 }

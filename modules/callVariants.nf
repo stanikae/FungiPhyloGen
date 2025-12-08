@@ -4,7 +4,7 @@ nextflow.enable.dsl=2
 // --- MODULE: VARIANT CALLING ---
 
 process CALLVARIANTS {
-    tag "$sample_id"
+    tag "${meta.id}"
     publishDir "$params.bcftl/raw_per_sample", mode: 'copy'
 
     conda "$params.cacheDir/fpgCallVariants"
@@ -12,37 +12,39 @@ process CALLVARIANTS {
     executor 'slurm'
 
     input:
-    tuple val(sample_id), path(bam)
+    tuple val(meta), path(bam)
     path ref
 
     output:
-    tuple val(sample_id), path("${sample_id}.raw.bcf"), emit: bcf
-    tuple val(sample_id), path("${sample_id}.raw.bcf.csi"), emit: bcf_idx
+    tuple val(meta), path("${meta.id}.raw.bcf"), emit: bcf
+    tuple val(meta), path("${meta.id}.raw.bcf.csi"), emit: bcf_idx
 
     script:
     """
-    bcftools mpileup \\
-        --threads ${task.cpus} \\
-        -a AD,DP,SP \\
-        --output-tags MQ,SOR \\
-        -Q 30 \\
-        -f $ref \\
-        $bam \\
-        -Ou | \\
-    bcftools call \\
-        --threads ${task.cpus} \\
-        -a GQ \\
-        --ploidy $params.ploidy \\
-        -m \\
-        -Ob \\
-        -o ${sample_id}.raw.bcf
+    # FIX: Added 'ADF,ADR' to the annotation tags (-a).
+    # This provides the raw forward/reverse counts needed to calculate FS later.
+    
+    bcftools mpileup \
+        --threads ${task.cpus} \
+        -a AD,DP,SP,ADF,ADR \
+        -Q 30 \
+        -f $ref \
+        $bam \
+        -Ou | \
+    bcftools call \
+        --threads ${task.cpus} \
+        -a GQ \
+        --ploidy $params.ploidy \
+        -m \
+        -Ob \
+        -o ${meta.id}.raw.bcf
 
-    bcftools index ${sample_id}.raw.bcf
+    bcftools index ${meta.id}.raw.bcf
     """
 }
 
 process FILTERSAMPLE {
-    tag "$sample_id"
+    tag "${meta.id}"
     publishDir "$params.bcftl/filtered_per_sample", mode: 'copy'
 
     conda "$params.cacheDir/fpgCallVariants"
@@ -50,29 +52,30 @@ process FILTERSAMPLE {
     executor 'slurm'
 
     input:
-    tuple val(sample_id), path(bcf)
-    path bcf_idx // Dummy input to ensure index is staged
+    tuple val(meta), path(bcf), path(bcf_idx)
 
     output:
-    path("${sample_id}.filtered.bcf"), emit: smpl_filt
-    path("${sample_id}.filtered.bcf.csi"), emit: smpl_idx
+    path("${meta.id}.filtered.bcf"), emit: smpl_filt
+    path("${meta.id}.filtered.bcf.csi"), emit: smpl_idx
 
     script:
-    // Apply a consistent, minimal hard filter to remove obvious junk before merging.
     """
-    bcftools filter \\
-        --threads ${task.cpus} \\
-        -i 'TYPE="snp" && QUAL>=20 && DP>=5' \\
-        -Ob \\
-        -o ${sample_id}.filtered.bcf \\
+    # Debug print
+    echo "Processing input BCF: $bcf"
+    
+    bcftools filter \
+        --threads ${task.cpus} \
+        -i 'TYPE="snp" && QUAL>=20 && INFO/DP>=5' \
+        -Ob \
+        -o ${meta.id}.filtered.bcf \
         $bcf
 
-    bcftools index ${sample_id}.filtered.bcf
+    bcftools index ${meta.id}.filtered.bcf
     """
 }
 
 process BCFMERGE {
-    tag "merge_${bcf.size()}_samples"
+    tag "merge"
     publishDir "$params.bcftl/merged", mode: 'copy'
 
     conda "$params.cacheDir/fpgCallVariants"
@@ -89,11 +92,12 @@ process BCFMERGE {
 
     script:
     """
-    bcftools merge \\
-        --threads ${task.cpus} \\
-        -0 \\
-        -l ${bcf.join(' ')} \\
-        -Ob \\
+    # List of files passed directly (no -l flag)
+    bcftools merge \
+        --threads ${task.cpus} \
+        -0 \
+        ${bcf} \
+        -Ob \
         -o merged.bcf
 
     bcftools index merged.bcf
@@ -118,13 +122,12 @@ process REHEADERVCF {
 
     script:
     """
-    # Create a mapping file to rename samples (e.g., remove suffix)
-    bcftools query -l "$bcf" | sed -E 's/\\.filtered$//' | awk '{print \$1 "\t" \$1}' > reheader.txt
+    bcftools query -l "${bcf}" | awk '{ old=\$1; sub(/\\.filtered\$/, "", \$1); print old "\t" \$1 }' > reheader.txt
 
-    bcftools reheader \\
-        -s reheader.txt \\
-        -o reheadered.bcf \\
-        "$bcf"
+    bcftools reheader \
+        -s reheader.txt \
+        -o reheadered.bcf \
+        "${bcf}"
 
     bcftools index reheadered.bcf
     """
@@ -150,17 +153,19 @@ process BCFNORM {
 
     script:
     """
-    bcftools norm \\
-        -m -any \\
-        --threads ${task.cpus} \\
-        -f $ref \\
-        $bcf \\
-        -Ob \\
+    bcftools norm \
+        -m -any \
+        --threads ${task.cpus} \
+        -f $ref \
+        $bcf \
+        -Ob \
         -o normalized.bcf 2> norm.log
 
     bcftools index normalized.bcf
     """
 }
+
+
 
 process SOFTFILTERVCF {
     tag "soft_filter"
@@ -179,26 +184,25 @@ process SOFTFILTERVCF {
     path "soft_filtered.bcf.csi", emit: idx_filt
 
     script:
-    // Dynamically select the filter expression from the config file
     filter_expression = params.filters[params.genus] ?: params.filters['default']
     """
-    # Step 1: Add the QD (Quality by Depth) tag, which is crucial for good filtering.
-    bcftools +fill-tags $bcf -Ob -o tmp.bcf -- -t QD
-    bcftools index tmp.bcf
-
-    # Step 2: Apply a single, comprehensive soft filter.
-    # Failing variants are marked with 'FAIL' but not removed yet.
-    bcftools filter \\
-        --threads ${task.cpus} \\
-        -s 'FAIL' \\
-        -e '${filter_expression}' \\
-        -Ob \\
-        -o soft_filtered.bcf \\
-        tmp.bcf
+    # FIX: Removed 'fill-tags' entirely.
+    # BCFtools handles strand bias by lowering the QUAL score, 
+    # so we rely on QUAL < 30 to catch bias issues.
+    
+    bcftools filter \
+        --threads ${task.cpus} \
+        -s 'FAIL' \
+        -e '${filter_expression}' \
+        -Ob \
+        -o soft_filtered.bcf \
+        $bcf
 
     bcftools index soft_filtered.bcf
     """
 }
+
+
 
 process FILTERVCF {
     tag "extract_pass"
@@ -223,31 +227,22 @@ process FILTERVCF {
     """
     #!/usr/bin/env bash
     
-    # Create a temporary VCF with only PASSing variants
     bcftools view --threads ${task.cpus} -f 'PASS' -Ob -o tmp.pass.bcf $bcf
 
-
-    # Count the number of variant records (excluding the header)
     N_VARIANTS=\$(bcftools view -H tmp.pass.bcf | wc -l) 
 
-
-
-    # Only create final output files if variants exist
     if [ "\$N_VARIANTS" -gt 0 ]; then
-        # Rename temp file to final output
         mv tmp.pass.bcf final.pass.bcf
         bcftools index final.pass.bcf
 
-        # Create the compressed VCF and its index
         bcftools view -Oz -o final.pass.vcf.gz final.pass.bcf
         bcftools index -t final.pass.vcf.gz
 
-        # Get the final list of samples
         bcftools query -l final.pass.bcf > sample_list.txt
     fi
-    """   
-
+    """    
 }
+
 
 process VCFSNPS2FASTA {
     tag "vcf_to_fasta"
@@ -267,13 +262,27 @@ process VCFSNPS2FASTA {
 
     script:
     """
-    readlink -f $vcf > vcf_infile
+    # --- FIX START ---
+    # Decompress the VCF because the Python script cannot read .gz
+    # We pipe to a new file named 'input.vcf'
+    gunzip -c $vcf > input.vcf
+    
+    # Point the python script to the uncompressed file
+    readlink -f input.vcf > vcf_infile
+    # --- FIX END ---
+
     nsamples=\$(cat "$samples" | wc -l)
     amb_samples=\$(awk "BEGIN {print (\$nsamples/100)*10}" | awk '{ print int(\$1) }')
 
-    python $projectDir/templates/broad-fungalgroup/scripts/SNPs/vcfSnpsToFasta.py --max_amb_samples \$amb_samples vcf_infile > fpg_snp_aln.fa
+    python $projectDir/templates/broad-fungalgroup/scripts/SNPs/vcfSnpsToFasta.py \
+        --max_amb_samples \$amb_samples \
+        vcf_infile > fpg_snp_aln.fa
     """
 }
+
+
+
+
 
 process VCF2PHYLIP {
     tag "vcf_to_phylip"
@@ -311,34 +320,21 @@ process VCF2PHYLIP {
 
 workflow BCFTOOLS {
     take:
-    ch_bam // Expects channel: [ [id], bam ]
-    ch_ref // Expects channel: [ ref ]
+    ch_bam 
+    ch_ref 
 
     main:
-    // 1. Call variants per sample
     CALLVARIANTS(ch_bam, ch_ref)
-
-    // 2. Initial hard filter on each sample's BCF
     FILTERSAMPLE(CALLVARIANTS.out.bcf.join(CALLVARIANTS.out.bcf_idx))
 
-    // 3. Collect and merge all sample BCFs
     smpl_filt_ch = FILTERSAMPLE.out.smpl_filt.collect()
     smpl_idx_ch  = FILTERSAMPLE.out.smpl_idx.collect()
     BCFMERGE(smpl_filt_ch, smpl_idx_ch)
 
-    // 4. Reheader to clean sample names
     REHEADERVCF(BCFMERGE.out.mge, BCFMERGE.out.mge_idx)
-
-    // 5. Normalize variants (split multiallelic sites)
     BCFNORM(REHEADERVCF.out.reh_bcf, REHEADERVCF.out.reh_idx, ch_ref)
-
-    // 6. Apply comprehensive soft filters
     SOFTFILTERVCF(BCFNORM.out.bcf_norm, BCFNORM.out.idx_norm)
-
-    // 7. Extract PASSing variants into final BCF/VCF files
     FILTERVCF(SOFTFILTERVCF.out.bcf_filt, SOFTFILTERVCF.out.idx_filt)
-
-    // 8. Convert final VCF to other formats
     VCFSNPS2FASTA(FILTERVCF.out.vcf_pass, FILTERVCF.out.sample_list)
     VCF2PHYLIP(FILTERVCF.out.vcf_pass)
 

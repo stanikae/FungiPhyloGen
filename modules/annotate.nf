@@ -1,94 +1,79 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-
-
 process RUNSNPEFF {
- // tag "$sampleId"
+    tag "snpeff"
+    cpus 4
+    executor 'slurm'
 
-  cpus 8
-  executor 'slurm'
+    conda "$params.cacheDir/fpgCallVariants"
+    publishDir "$params.ann", mode: 'copy'
 
-  conda "$params.cacheDir/fpgCallVariants"
-  publishDir "$params.ann", mode: 'copy'
-
-
-  input:
-    //val ready
+    input:
     path(vcf)
     file(ref)
     file(gbk)
 
-  output:
+    output:
     path("snpeff/snpeff_ann.vcf"), emit: ann
-    //path("*.iqtree"), emit: iq_log
-    //path("*.mldist"), emit: mldist
-    //path("*.bionj"), emit: bionj
-    //path("*.log"), emit: log
-    //path("*.gz"),emit: zp
+    // path("snpeff/snpEff_summary.html"), emit: summary, optional: true
 
+    script:
+    """
+    #!/usr/bin/env bash
 
-  script:
+    # 1. Create directory structure
+    if ! [[ -d snpeff/ref/genomes/ref ]]; then mkdir -p snpeff/ref/genomes/ref; fi
 
-
-  """
-  #!/usr/bin/env bash
-  
-  if ! [[ -d snpeff ]]; then mkdir -p snpeff; fi
-  
-  
-  CONDA_BASE="$params.cacheDir/fpgCallVariants"
-  pfx=`basename $projectDir`
-  configPath=\$(find \${CONDA_BASE}/share/* -maxdepth 1 -name "snpEff.config")
-  binDir=\$(dirname `find \${CONDA_BASE}/share/* -name "snpEff.jar"`)
-
-  # add ref and gbk to workdir
-  if ! [[ -d snpeff/ref/genomes/ref ]]; then mkdir -p snpeff/ref/genomes/ref; fi
-
-  cp "$ref" snpeff/ref/genomes/ref/ref.fa
-  cp "$gbk" snpeff/ref/genomes/ref/genes.gbk
-  cp \$configPath snpeff/ref/snpEff.config
-  cp "$vcf" snpeff/ref/fpg.vcf
-  
-  # append organism description to config
-  echo -e "ref.genome : FPG Reference" >> snpeff/ref/snpEff.config 
-  
-  # build database
-  cd ./snpeff/ref
-  
-  if [[ -f genomes/ref/genes.gbk ]]; then
-     # build database
-     java -jar \$binDir/snpEff.jar build -genbank -dataDir genomes -c snpEff.config ref
-     # Annotate SNPs with snpEff
-     java -jar \$binDir/snpEff.jar ann ref -noLog -nodownload -onlyProtein -dataDir genomes -c snpEff.config fpg.vcf > ../snpeff_ann.vcf
-  fi
-
-  
-
- # if ! [[ -f ../snpeff_ann.vcf ]]; then 
- #    cp $vcf ../snpeff_ann.vcf
- # fi
+    # 2. Setup Variables
+    # FIX: Use \$(...) syntax instead of backticks to avoid syntax errors
+    CONDA_BASE="$params.cacheDir/fpgCallVariants"
     
-  
-  """
+    # We use 'find' to locate the config and jar safely
+    configPath=\$(find \${CONDA_BASE}/share -name "snpEff.config" | head -n 1)
+    binDir=\$(dirname \$(find \${CONDA_BASE}/share -name "snpEff.jar" | head -n 1))
 
+    # 3. Stage Reference Files
+    cp "$ref" snpeff/ref/genomes/ref/ref.fa
+    cp "$gbk" snpeff/ref/genomes/ref/genes.gbk
+    cp \$configPath snpeff/ref/snpEff.config
+
+    # --- HANDLE VCF COMPRESSION ---
+    # Copy input to a .gz file
+    cp "$vcf" snpeff/ref/fpg.vcf.gz
+    
+    # Decompress to plain text for SnpEff
+    gunzip -f snpeff/ref/fpg.vcf.gz
+    
+    # 4. Configure SnpEff
+    echo -e "ref.genome : FPG Reference" >> snpeff/ref/snpEff.config
+
+    # 5. Run SnpEff
+    cd ./snpeff/ref
+
+    if [[ -f genomes/ref/genes.gbk ]]; then
+        # Build database
+        java -jar \$binDir/snpEff.jar build -genbank -dataDir genomes -c snpEff.config ref
+        
+        # Annotate (reading plain text fpg.vcf)
+        java -jar \$binDir/snpEff.jar ann ref \
+            -noLog -nodownload -onlyProtein \
+            -dataDir genomes \
+            -c snpEff.config \
+            fpg.vcf > ../snpeff_ann.vcf
+    fi
+    """
 }
-
-
 
 workflow WFANNOTATESNP {
-  take:
-    x
-    y
-    z
+    take:
+    ch_vcf
+    ch_ref
+    ch_gbk
 
-  main:
-     RUNSNPEFF(x,y,z)
+    main:
+    RUNSNPEFF(ch_vcf, ch_ref, ch_gbk)
 
-  emit:
-   eff = RUNSNPEFF.out.ann
-        
-
+    emit:
+    eff = RUNSNPEFF.out.ann
 }
-
-

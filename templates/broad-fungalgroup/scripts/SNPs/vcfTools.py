@@ -4,7 +4,15 @@ from __future__ import division
 
 import re, sys
 
-from scipy.stats import binom_test
+# --- FIX: Handle SciPy version differences ---
+try:
+    from scipy.stats import binom_test
+except ImportError:
+    # Fallback for SciPy >= 1.12
+    from scipy.stats import binomtest
+    def binom_test(x, n=None, p=0.5, alternative='two-sided'):
+        return binomtest(x, n, p, alternative).pvalue
+# ---------------------------------------------
 
 class VcfRecord:
 	"""

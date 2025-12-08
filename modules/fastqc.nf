@@ -1,72 +1,45 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-
-//reads_ch = Channel.fromPath("$params.readsDir/**.f*q.gz", checkIfExists: true) 
-//params.readsDir = Channel.fromPath("$params.rawReads/**.f*q.gz", checkIfExists: true)
-//params.mqcOut = "$params.resultsDir/multiqc/raw"  //$params.mqcTyp"
-//params.fqcOut = file("$params.resultsDir/fqc_raw")
-//params.threads = 2
-
-
-// fastqc contam and adapter files
-contaminants = "$params.cacheDir/trimReads/opt/fastqc*/Configuration/contaminant_list.txt"
-adapters = "$params.cacheDir/trimReads/opt/fastqc*/Configuration/adapter_list.txt"
-
-
-
 process fqc {
+  tag "${meta.id}"
   cpus 8
   executor 'slurm'
   errorStrategy 'ignore'
 
-  conda "$params.cacheDir/trimReads"
+  // Update to the correct environment name
+  conda "$params.cacheDir/fpgtrimReads"
+  
+  // Use the parameter passed from the main workflow
   publishDir "$params.fqcOut", mode: 'copy'
 
   input:
-    file cont
-    file adp 
-    tuple val(sampleID), file(read1), file(read2)
-    //path fq
-    //file fq
-   
+    path cont
+    path adp
+    // Updated to accept [meta, [reads]] structure
+    tuple val(meta), path(reads)
 
   output:
-    // path("*.html"), emit: fqc_out
-    // path("*.zip"), emit: fqc_zip
-   file "*"
+    path "*.html", emit: html
+    path "*.zip" , emit: zip
 
   script:
   """
   #!/usr/bin/env bash
-  THREADS=${task.cpus} 
-  nam=\$(echo "$sampleID" | cut -d_ -f1-2 | tr "_" "-")
-  if ! [[ -d \$nam ]]; then mkdir -p \$nam ; fi
-  fastqc -o \$nam --contaminants "$cont" --adapters "$adp" --threads \$THREADS "$read1" "$read2"
   
+  # Ensure output directory for samples exists if needed (FastQC handles this usually)
+  # Using meta.id to handle the map structure
+  
+  # Run FastQC
+  # Note: ${reads} expands to both files in the list (R1 R2)
+  
+  fastqc \
+    --outdir . \
+    --contaminants "$cont" \
+    --adapters "$adp" \
+    --threads ${task.cpus} \
+    ${reads}
   """
 }
-
-
-
-workflow qc_ind {
-    take: 
-        cont
-        adp
-	fq
-    main:
-       fqc(cont, adp, fq)
-    emit:
-        fqc.out
-
-}
-
-
-workflow {
-    fq_ch = index_ch.splitCsv(header:true).map { row-> tuple(row.sampleID, file(row.read1), file(row.read2)) }
-    qc_ind(file("$contaminants"),file("$adapters"),fq_ch)    
-}
-
-
 
 

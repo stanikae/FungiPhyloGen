@@ -12,9 +12,9 @@ nextflow.enable.dsl=2
 ================================================================
 */
 
-include { fqc as FASTQCRAW } from '../modules/fastqc_test.nf' addParams(fqcOut: "$params.resultsDir/fqc_raw")
+include { fqc as FASTQCRAW } from '../modules/fastqc.nf' addParams(fqcOut: "$params.resultsDir/fqc_raw")
 include { trimReads as TRIMREADS } from '../modules/trimreads.nf'
-include { fqc as FASTQCCLEAN } from '../modules/fastqc_test.nf' addParams(fqcOut: "$params.resultsDir/fqc_clean")
+include { fqc as FASTQCCLEAN } from '../modules/fastqc.nf' addParams(fqcOut: "$params.resultsDir/fqc_clean")
 include { mqc as MULTIQCRAW } from '../modules/multiqc.nf' addParams(mqcOut: "$params.resultsDir/multiqc/raw", fileN: "${params.prjName}_raw")
 include { mqc as MULTIQCCLEAN } from '../modules/multiqc.nf' addParams(mqcOut: "$params.resultsDir/multiqc/clean", fileN: "${params.prjName}_clean")
 include { GETREPEATS } from '../modules/indexref.nf'
@@ -74,11 +74,6 @@ params.nj = file("$params.resultsDir/rapidnj")
 params.dist = file("$params.resultsDir/snpdists")
 params.ann = file("$params.resultsDir/snpeff")
 params.deNovo = file("$params.resultsDir/assemblies")
-params.bcftl.mkdirs() ? ! params.bcftl.exists() : 'Directory already exists'
-params.iq.mkdirs() ? ! params.iq.exists() : 'Directory already exists'
-params.nj.mkdirs() ? ! params.nj.exists() : 'Directory already exists'
-params.deNovo.mkdirs() ? ! params.deNovo.exists() : 'Directory already exists'
-//params.flag = false
 
 
 /*
@@ -86,9 +81,6 @@ params.deNovo.mkdirs() ? ! params.deNovo.exists() : 'Directory already exists'
         Define files
 =================================================================
 */
-
-contaminants = "$params.cacheDir/trimReads/opt/fastqc*/Configuration/contaminant_list.txt"
-adapters = "$params.cacheDir/trimReads/opt/fastqc*/Configuration/adapter_list.txt"
 
 
 
@@ -102,7 +94,7 @@ adapters = "$params.cacheDir/trimReads/opt/fastqc*/Configuration/adapter_list.tx
 
 workflow FUNGIPHYLOGEN {
 
-    // --- INPUT CHANNEL FROM SAMPLESHEET ---
+// --- INPUT CHANNEL FROM SAMPLESHEET ---
     if (!params.samplesheet) {
         exit 1, "Input samplesheet not specified. Please provide a path using --samplesheet <file.csv>"
     }
@@ -111,14 +103,37 @@ workflow FUNGIPHYLOGEN {
         .fromPath(params.samplesheet)
         .splitCsv(header: true, sep: ',')
         .map { row ->
-            def meta = [id: row.sample]
+            // DEFENSIVE CHECK 1: Use the correct CSV headers here!
+            if (!row.sampleID || !row.read1 || !row.read2) {
+                log.warn "Skipping invalid row (missing columns): $row"
+                return null
+            }
+
+            // DEFENSIVE CHECK 2: Check for empty strings
+            if (row.read1 == "" || row.read2 == "") {
+                log.warn "Skipping row with empty paths: $row"
+                return null
+            }
+
+            def meta = [id: row.sampleID] // MATCHES CSV HEADER 'sampleID'
+            
             def reads = [
-                file(row.fastq_1, checkIfExists: true),
-                file(row.fastq_2, checkIfExists: true)
+                // MATCHES CSV HEADERS 'read1' and 'read2'
+                file(row.read1, checkIfExists: true),
+                file(row.read2, checkIfExists: true)
             ]
             return [meta, reads]
         }
+        .filter { it != null } 
         .set { ch_input_reads }
+    
+    def contaminants = file("/spaces/stanford/anaconda3/envs/fpgtrimReads/opt/fastqc-0.11.9/Configuration/contaminant_list.txt",checkIfExists: true)
+    def adapters     = file("/spaces/stanford/anaconda3/envs/fpgtrimReads/opt/fastqc-0.11.9/Configuration/adapter_list.txt",checkIfExists: true)
+
+    // OPTIONAL: DEBUG PRINT
+    log.info "Contaminants found: ${contaminants}"
+    log.info "Adapters:     $adapters"
+
 
     // --- REFERENCE PREPARATION ---
     GETREPEATS(file("$params.refseq"))
@@ -130,7 +145,6 @@ workflow FUNGIPHYLOGEN {
 
 
     // --- CONDITIONAL READ TRIMMING ---
-    // This block intelligently decides whether to run the TRIM_READS step
     if (params.skip_trimming) {
         log.info "Skipping read trimming as requested by --skip_trimming."
         ch_reads_for_alignment = ch_input_reads
@@ -138,22 +152,28 @@ workflow FUNGIPHYLOGEN {
         log.info "Trimming raw reads."
 
         // --- MULTIQC ON RAW READS ---
-        FASTQCRAW(file("$contaminants"),file("$adapters"),ch_input_reads)
-        MULTIQCRAW(FASTQCRAW.out.collect())
+        // FIX: Removed file("$...") wrapper. Passed variables directly.
+        FASTQCRAW(contaminants, adapters, ch_input_reads)
+        
+        // FIX: Added .zip to collect only the zip files
+        MULTIQCRAW(FASTQCRAW.out.zip.collect())
 
         trim(ch_input_reads)
         ch_reads_for_alignment = trim.out.rds
 
         // --- MULTIQC ON CLEAN READS ---
-        FASTQCCLEAN(file("$contaminants"),file("$adapters"),ch_reads_for_alignment) //trim.out.rds.collect())
-        MULTIQCCLEAN(FASTQCCLEAN.out.collect())
-
+        // FIX: Removed file("$...") wrapper here too.
+        FASTQCCLEAN(contaminants, adapters, ch_reads_for_alignment)
+        
+        // FIX: Added .zip here too
+        MULTIQCCLEAN(FASTQCCLEAN.out.zip.collect())
     }
-
     
     // --- ALIGNMENT ---
-    ALN(ch_ref_indexed,ch_reads_for_alignment) //ch_ref_indexed.prs.collect()
-    MARKDUPS(ALN.out.bam)
+    //ALN(ch_ref_indexed,ch_reads_for_alignment) //ch_ref_indexed.prs.collect()
+    ALIGNBWAMEM(ch_ref_indexed, ch_reads_for_alignment)
+    //MARKDUPS(.out.bam)
+    MARKDUPS(ALIGNBWAMEM.out.aln_bam)
     SORTMARKED(MARKDUPS.out.marked)
     ch_sorted_bam = SORTMARKED.out.sorted 
     SAMINDEX(ch_sorted_bam)
