@@ -6,3 +6,5 @@ FungiPhyloGen (FPG) is a production-grade bioinformatics pipeline designed for g
 
 Built on Nextflow, it leverages Conda for reproducibility and supports both local and HPC (Slurm) execution via profiles.
 
+
+
