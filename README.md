@@ -70,12 +70,14 @@ slurm {
 ```
 
 ### 2. Filter Profiles
-FungiPhyloGen uses pre-defined profiles to switch between strict and lenient filtering logic without editing code. Use the `--filter_profile` flag at runtime.
+FungiPhyloGen uses pre-defined profiles to switch between strict and lenient filtering logic. Use the `--filter_profile` flag at runtime.
 
-| Profile | Target Organism | Use Case |
+| Profile | Target Organism | Filter Logic & Use Case |
 | :--- | :--- | :--- |
-| `cauris_small` | *C. auris* | **Default.** Strict filtering for small batches. |
-| `cauris_batch` | *C. auris* | Large outbreaks. Tolerates higher missing data (`F_MISSING > 0.2`). |
-| `wanomalus_small` | *W. anomalus* | High stringency. |
-| `wanomalus_batch` | *W. anomalus* | Batch processing with relaxed missing data thresholds. |
-| `cparapsilosis` | *C. parapsilosis* | Uses custom `QUAL/MAX(AD)` metrics for this species. |
+| `general` | **All Fungi** | **Recommended Default.** Balanced filters with purity check (AF > 0.75). Use for *Histoplasma*, *Emergomyces*, etc. |
+| `cauris_small` | *C. auris* | **Standard Purity.** Identical to `general`. |
+| `cauris_batch` | *C. auris* | **Core Consensus.** Allows heterozygous calls but removes sites with >20% missing data. |
+| `wanomalus_small` | *W. anomalus* | **High Stringency.** Very strict Quality/Depth ratio (QD > 0.1). |
+| `wanomalus_batch` | *W. anomalus* | **Ultra-High Purity.** Requires AF > 0.85. Ideal for defining reference SNPs. |
+| `cparapsilosis` | *C. parapsilosis* | **Custom Metric.** Uses specialized `QUAL/MAX(AD)` ratio. |
+| `cneoformans` | *C. neoformans* | **Standard Purity.** Identical to `general`. |
