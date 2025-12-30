@@ -184,16 +184,17 @@ process SOFTFILTERVCF {
     path "soft_filtered.bcf.csi", emit: idx_filt
 
     script:
-    filter_expression = params.filters[params.genus] ?: params.filters['default']
     """
-    # FIX: Removed 'fill-tags' entirely.
     # BCFtools handles strand bias by lowering the QUAL score, 
     # so we rely on QUAL < 30 to catch bias issues.
+    
+    # Using Filter Logic from Config:
+    # ${params.active_filter}
     
     bcftools filter \
         --threads ${task.cpus} \
         -s 'FAIL' \
-        -e '${filter_expression}' \
+        -e '${params.active_filter}' \
         -Ob \
         -o soft_filtered.bcf \
         $bcf

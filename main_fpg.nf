@@ -1,35 +1,48 @@
 #!/usr/bin/env nextflow
 
+// ------------------------------------------------------
+// 1. VALIDATION CHECK (Fail Fast)
+// ------------------------------------------------------
+
+if (!params.active_filter) {
+    log.error """
+    ================================================================
+    CRITICAL ERROR: Invalid Filter Profile
+    ================================================================
+    The profile '${params.filter_profile}' was not found in the config.
+    
+    Available Profiles:
+    ${params.filters.keySet().join('\n    - ')}
+    
+    Please check your --filter_profile argument.
+    ================================================================
+    """
+    exit 1
+}
 
 log.info """
 =========================================
 DEBUGGING PARAMETERS
 =========================================
-RefSeq : ${params.refseq}
-GBK    : ${params.gbk}
-Config : ${workflow.configFiles}
+RefSeq         : ${params.refseq}
+GBK            : ${params.gbk}
+Filter Profile : ${params.filter_profile}
+Filter Logic   : ${params.active_filter}
+Config         : ${workflow.configFiles}
 =========================================
 """
 
 /*
 ========================================================================================
-    nf-core/bactmap
+    nf-FPG
 ========================================================================================
     Github : https://github.com/stanikae/FungiPhyloGen
     Website: https://github.com/stanikae/FungiPhyloGen
-    Slack  : 
+    Zenodo : 
 ----------------------------------------------------------------------------------------
 */
 
 nextflow.enable.dsl = 2
-
-/*
-========================================================================================
-    VALIDATE & PRINT PARAMETER SUMMARY
-========================================================================================
-*/
-
-//WorkflowMain.initialise(workflow, params, log)
 
 /*
 ========================================================================================
