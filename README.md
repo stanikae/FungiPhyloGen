@@ -168,12 +168,14 @@ Results are saved in the `results/` folder (or directory specified by `--results
 **FungiPhyloGen** was developed by **Stanford Kwenda**
 <br>
 
-<img src="https://github.com/Terra-Informatix-Pty-Ltd/Intro-To-Linux/blob/main/TerraInfo-logoX_cropped.png" width="250" length="250" align="left"> 
-<img src="https://github.com/Terra-Informatix-Pty-Ltd/Intro-To-Linux/blob/main/Wits-Mycology-Logo_Screenshot%202025-08-10%20115556.png" width="250" length="250" align="left">
-
+<img src="https://github.com/Terra-Informatix-Pty-Ltd/Intro-To-Linux/blob/main/TerraInfo-logoX_cropped.png" width="150" length="150" align="left"> 
+<img src="https://github.com/Terra-Informatix-Pty-Ltd/Intro-To-Linux/blob/main/Wits-Mycology-Logo_Screenshot%202025-08-10%20115556.png" width="150" length="150" align="left">
 
 <br>
 <br>
+<br>
+<br>
+
 
 ### How to Cite
 If you use this pipeline in your research, please cite this repository:
