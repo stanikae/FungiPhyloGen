@@ -161,3 +161,28 @@ Results are saved in the `results/` folder (or directory specified by `--results
 **4. Pipeline ignores config / "Params are null"**
 * **Cause:** Nextflow is not reading your configuration file because it is named `FungiPhyloGen.config` instead of the default `nextflow.config`.
 * **Fix:** Rename the file: `mv FungiPhyloGen.config nextflow.config`, or explicitly pass it with `-c FungiPhyloGen.config`.
+
+
+## 👥 Credits & Citations
+
+**FungiPhyloGen** was developed by **Stanford Kwenda** (Terra Informatix / NSCF).
+
+### How to Cite
+If you use this pipeline in your research, please cite this repository:
+> Kwenda, S. (2025). FungiPhyloGen: A Nextflow pipeline for fungal genomic epidemiology. https://github.com/stanikae/FungiPhyloGen
+
+### Software References
+This pipeline leverages the following excellent open-source tools. Please cite them in your methods section:
+* **Nextflow:** Di Tommaso, P., et al. (2017). *Nature Biotechnology*.
+* **BCFtools:** Danecek, P., et al. (2021). *GigaScience*.
+* **IQ-TREE:** Minh, B. Q., et al. (2020). *Molecular Biology and Evolution*.
+* **SnpEff:** Cingolani, P., et al. (2012). *Fly*.
+* **MultiQC:** Ewels, P., et al. (2016). *Bioinformatics*.
+* **RapidNJ:** Simonsen, M., et al. (2011). *WABI*.
+
+## 💰 Funding
+
+This work was supported by **[Insert Funding Body Name]** under grant number **[Insert Grant Number]**.
+
+* **Principal Investigator:** [Name]
+* **Grant Title:** [Title of the Project/Grant]
