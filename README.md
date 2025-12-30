@@ -142,3 +142,22 @@ Results are saved in the `results/` folder (or directory specified by `--results
 | `iqtree_phylogeny/` | `*.treefile` | Maximum Likelihood tree (Newick format). |
 | `snp_distances/` | `snp_distance_matrix.tsv` | Pairwise SNP count matrix. |
 | `multiqc/` | `multiqc_report.html` | Aggregate quality report. |
+
+
+## 🆘 Troubleshooting
+
+**1. "CRITICAL ERROR: Invalid Filter Profile"**
+* **Cause:** You passed a profile name to `--filter_profile` that doesn't exist in the `filters` block of `nextflow.config`.
+* **Fix:** Check `nextflow.config` for the list of valid keys (e.g., `cauris_small`).
+
+**2. "Argument of file function cannot be null"**
+* **Cause:** The samplesheet often has an empty trailing line or incorrect headers.
+* **Fix:** Ensure headers are exactly `sampleID,read1,read2` and remove empty rows.
+
+**3. "Picard JAR not found"**
+* **Cause:** The pipeline is looking for `picard.jar` in the wrong location (e.g., local home dir) while running on Slurm.
+* **Fix:** Check the `slurm` profile in `nextflow.config`. Ensure `params.condaCacheDir` is explicitly overridden to point to your HPC environment path.
+
+**4. Pipeline ignores config / "Params are null"**
+* **Cause:** Nextflow is not reading your configuration file because it is named `FungiPhyloGen.config` instead of the default `nextflow.config`.
+* **Fix:** Rename the file: `mv FungiPhyloGen.config nextflow.config`, or explicitly pass it with `-c FungiPhyloGen.config`.
