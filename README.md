@@ -112,6 +112,7 @@ Sample_B,/full/path/to/Sample_B_R1.fastq.gz,/full/path/to/Sample_B_R2.fastq.gz
 
 ```bash
 nextflow run main_fpg.nf \
+    -c FungiPhyloGen.config \
     -profile slurm \
     -resume \
     --samplesheet ./samplesheet.csv \
@@ -125,6 +126,7 @@ nextflow run main_fpg.nf \
 
 ```bash
 nextflow run main_fpg.nf \
+    -c FungiPhyloGen.config \
     -profile standard \
     --samplesheet ./samplesheet.csv \
     --filter_profile cauris_small
