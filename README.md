@@ -55,7 +55,7 @@ To ensure the pipeline runs smoothly on different infrastructures, you must conf
 ### 1. Tool Paths (Conda & Picard)
 The pipeline requires absolute paths to the Conda environments and the Picard JAR file.
 * **Local Runs:** The default is set to `${HOME}/anaconda3/envs`.
-* **HPC Runs:** You **must** override the `condaCacheDir` in the `slurm` profile within nextflow.config i.e. `Fungiphylogen.config`.
+* **HPC Runs:** You **must** override the `condaCacheDir` in the `slurm` profile within nextflow.config i.e. `FungiPhyloGen.config`.
 
 ```groovy
 // In nextflow.config -> profiles -> slurm
@@ -156,7 +156,7 @@ Results are saved in the `results/` folder (or directory specified by `--results
 
 **3. "Picard JAR not found"**
 * **Cause:** The pipeline is looking for `picard.jar` in the wrong location (e.g., local home dir) while running on Slurm.
-* **Fix:** Check the `slurm` profile in `nextflow.config`. Ensure `params.condaCacheDir` is explicitly overridden to point to your HPC environment path.
+* **Fix:** Check the `slurm` profile in `nextflow.config`. Ensure `params.CacheDir` is explicitly overridden to point to your HPC environment path.
 
 **4. Pipeline ignores config / "Params are null"**
 * **Cause:** Nextflow is not reading your configuration file because it is named `FungiPhyloGen.config` instead of the default `nextflow.config`.
