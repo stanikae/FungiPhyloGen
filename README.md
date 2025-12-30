@@ -165,7 +165,20 @@ Results are saved in the `results/` folder (or directory specified by `--results
 
 ## 👥 Credits & Citations
 
-**FungiPhyloGen** was developed by **Stanford Kwenda** (Terra Informatix / NSCF).
+**FungiPhyloGen** was developed by **Stanford Kwenda**
+<br>
+<br>
+<br>
+<br>
+
+<img src="https://github.com/Terra-Informatix-Pty-Ltd/Intro-To-Linux/blob/main/TerraInfo-logoX_cropped.png" width="250" length="250" align="right"> 
+<img src="https://github.com/Terra-Informatix-Pty-Ltd/Intro-To-Linux/blob/main/Wits-Mycology-Logo_Screenshot%202025-08-10%20115556.png" width="250" length="250" align="left">
+
+
+<br>
+<br>
+<br>
+<br>
 
 ### How to Cite
 If you use this pipeline in your research, please cite this repository:
