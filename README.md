@@ -55,7 +55,7 @@ To ensure the pipeline runs smoothly on different infrastructures, you must conf
 ### 1. Tool Paths (Conda & Picard)
 The pipeline requires absolute paths to the Conda environments and the Picard JAR file.
 * **Local Runs:** The default is set to `${HOME}/anaconda3/envs`.
-* **HPC Runs:** You **must** override the `condaCacheDir` in the `slurm` profile within `nextflow.config`.
+* **HPC Runs:** You **must** override the `condaCacheDir` in the `slurm` profile within nextflow.config i.e. `Fungiphylogen.config`.
 
 ```groovy
 // In nextflow.config -> profiles -> slurm
