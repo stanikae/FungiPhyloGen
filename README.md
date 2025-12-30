@@ -117,7 +117,7 @@ nextflow run main_fpg.nf \
     --samplesheet ./samplesheet.csv \
     --filter_profile cauris_small \
     --prjName "FPG_Run01"
-
+```
 
 **Option B: Local Machine (Testing)**
 * **Profile:** `-profile standard`
