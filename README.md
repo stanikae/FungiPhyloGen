@@ -166,10 +166,9 @@ Results are saved in the `results/` folder (or directory specified by `--results
 ## 👥 Credits & Citations
 
 **FungiPhyloGen** was developed by **Stanford Kwenda**
-<br>
 
-<img src="https://github.com/Terra-Informatix-Pty-Ltd/Intro-To-Linux/blob/main/TerraInfo-logoX_cropped.png" width="150" length="150" align="left"> 
-<img src="https://github.com/Terra-Informatix-Pty-Ltd/Intro-To-Linux/blob/main/Wits-Mycology-Logo_Screenshot%202025-08-10%20115556.png" width="150" length="150" align="left">
+<img src="https://github.com/Terra-Informatix-Pty-Ltd/Intro-To-Linux/blob/main/TerraInfo-logoX_cropped.png" width="150" length="150" align="rigt"> 
+<img src="https://github.com/Terra-Informatix-Pty-Ltd/Intro-To-Linux/blob/main/Wits-Mycology-Logo_Screenshot%202025-08-10%20115556.png" width="150" length="150" align="right">
 
 <br>
 <br>
