@@ -81,3 +81,20 @@ FungiPhyloGen uses pre-defined profiles to switch between strict and lenient fil
 | `wanomalus_batch` | *W. anomalus* | **Ultra-High Purity.** Requires AF > 0.85. Ideal for defining reference SNPs. |
 | `cparapsilosis` | *C. parapsilosis* | **Custom Metric.** Uses specialized `QUAL/MAX(AD)` ratio. |
 | `cneoformans` | *C. neoformans* | **Standard Purity.** Identical to `general`. |
+
+
+## 🏃 Usage
+
+### 1. Prepare Reference Genome
+You need a FASTA file and a GenBank format annotation file for your target organism.
+* Example: `ref/Clade_I_B8441.fna` and `ref/Clade_I_B8441.gbff`.
+
+### 2. Prepare Samplesheet
+Create a CSV file (e.g., `samplesheet.csv`) containing your sample metadata and read paths. 
+
+**Crucial:** The headers must be exactly `sampleID`, `read1`, and `read2`.
+
+```csv
+sampleID,read1,read2
+Sample_A,/full/path/to/Sample_A_R1.fastq.gz,/full/path/to/Sample_A_R2.fastq.gz
+Sample_B,/full/path/to/Sample_B_R1.fastq.gz,/full/path/to/Sample_B_R2.fastq.gz
