@@ -187,5 +187,5 @@ This pipeline leverages the following excellent open-source tools. Please cite t
 
 This work was supported by **[Insert Funding Body Name]** under grant number **[Insert Grant Number]**.
 
-* **Principal Investigator:** [Name]
+* **Principal Investigator:** [Professor Nelesh Govender]()
 * **Grant Title:** [Title of the Project/Grant]
