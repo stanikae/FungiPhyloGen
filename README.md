@@ -51,7 +51,7 @@ conda env create --file lib/phylo.yml --solver=libmamba -y
 
 ## ⚙️ Configuration (Crucial)
 
-To ensure the pipeline runs smoothly on different infrastructures, you must configure the **Conda Paths** and **Filter Profiles** in `nextflow.config`.
+To ensure the pipeline runs smoothly on different infrastructures, you must configure the **Conda Paths** and **Filter Profiles** in `FungiPhyloGen.config`.
 
 ### 1. Tool Paths (Conda & Picard)
 The pipeline requires absolute paths to the Conda environments and the Picard JAR file.
