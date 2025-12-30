@@ -128,3 +128,15 @@ nextflow run main_fpg.nf \
     -profile standard \
     --samplesheet ./samplesheet.csv \
     --filter_profile cauris_small
+```
+## 📂 Outputs
+Results are saved in the `results/` folder (or directory specified by `--resultsDir`).
+
+| Directory | Key File | Description |
+| :--- | :--- | :--- |
+| `trimmed/` | `*.fq.gz` | Cleaned FASTQ files. |
+| `variants/` | `final_vcf/final.pass.vcf.gz` | **The Final Output.** High-quality SNPs only. |
+| `snpeff_annotation/` | `snpeff_ann.vcf` | VCF annotated with gene changes (Synonymous/Missense). |
+| `iqtree_phylogeny/` | `*.treefile` | Maximum Likelihood tree (Newick format). |
+| `snp_distances/` | `snp_distance_matrix.tsv` | Pairwise SNP count matrix. |
+| `multiqc/` | `multiqc_report.html` | Aggregate quality report. |
