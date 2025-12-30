@@ -67,3 +67,14 @@ slurm {
     // This ensures the pipeline finds the correct Picard JAR
     params.PICARD = "${params.CacheDir}/fpgAlign/share/picard-2.27.4-0/picard.jar"
 }
+
+### 2. Filter Profiles
+FungiPhyloGen uses pre-defined profiles to switch between strict and lenient filtering logic without editing code. Use the `--filter_profile` flag at runtime.
+
+| Profile | Target Organism | Use Case |
+| :--- | :--- | :--- |
+| `cauris_small` | *C. auris* | **Default.** Strict filtering for small batches. |
+| `cauris_batch` | *C. auris* | Large outbreaks. Tolerates higher missing data (`F_MISSING > 0.2`). |
+| `wanomalus_small` | *W. anomalus* | High stringency. |
+| `wanomalus_batch` | *W. anomalus* | Batch processing with relaxed missing data thresholds. |
+| `cparapsilosis` | *C. parapsilosis* | Uses custom `QUAL/MAX(AD)` metrics for this species. |
