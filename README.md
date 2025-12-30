@@ -61,9 +61,9 @@ The pipeline requires absolute paths to the Conda environments and the Picard JA
 // In nextflow.config -> profiles -> slurm
 slurm {
     // ...
-    // UPDATE THIS PATH to your central HPC environment location
-    params.condaCacheDir = "/spaces/stanford/anaconda3/envs" 
+    // UPDATE THIS PATH to your central HPC conda environment location e.g.
+    params.CacheDir = "/scratch/package/anaconda/anaconda3_2023-02-27/envs" 
     
     // This ensures the pipeline finds the correct Picard JAR
-    params.picard_jar = "${params.condaCacheDir}/fpgAlign/share/picard-2.27.4-0/picard.jar"
+    params.PICARD = "${params.CacheDir}/fpgAlign/share/picard-2.27.4-0/picard.jar"
 }
