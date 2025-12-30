@@ -117,3 +117,14 @@ nextflow run main_fpg.nf \
     --samplesheet ./samplesheet.csv \
     --filter_profile cauris_small \
     --prjName "FPG_Run01"
+
+
+**Option B: Local Machine (Testing)**
+* **Profile:** `-profile standard`
+* **Resources:** Caps usage at 4 CPUs and 8GB RAM to prevent crashing your laptop.
+
+```bash
+nextflow run main_fpg.nf \
+    -profile standard \
+    --samplesheet ./samplesheet.csv \
+    --filter_profile cauris_small
