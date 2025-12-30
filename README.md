@@ -103,3 +103,17 @@ Sample_B,/full/path/to/Sample_B_R1.fastq.gz,/full/path/to/Sample_B_R2.fastq.gz
 > **Tip:** Use absolute paths (e.g., `/home/user/data/...`) for read files to avoid "File not found" errors, especially when running on an HPC.
 
 
+### 3. Run the Pipeline
+
+**Option A: HPC Cluster (Slurm)**
+* **Profile:** `-profile slurm`
+* **Resources:** Uses the high-memory configuration (up to 128GB) and submits jobs to the batch queue.
+* **Conda:** Uses the central Conda path defined in `nextflow.config`.
+
+```bash
+nextflow run main_fpg.nf \
+    -profile slurm \
+    -resume \
+    --samplesheet ./samplesheet.csv \
+    --filter_profile cauris_small \
+    --prjName "FPG_Run01"
