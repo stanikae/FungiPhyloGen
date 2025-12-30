@@ -98,3 +98,8 @@ Create a CSV file (e.g., `samplesheet.csv`) containing your sample metadata and 
 sampleID,read1,read2
 Sample_A,/full/path/to/Sample_A_R1.fastq.gz,/full/path/to/Sample_A_R2.fastq.gz
 Sample_B,/full/path/to/Sample_B_R1.fastq.gz,/full/path/to/Sample_B_R2.fastq.gz
+```
+
+> **Tip:** Use absolute paths (e.g., `/home/user/data/...`) for read files to avoid "File not found" errors, especially when running on an HPC.
+
+
