@@ -170,12 +170,6 @@ Results are saved in the `results/` folder (or directory specified by `--results
 
 **FungiPhyloGen** was developed by **Stanford Kwenda**
 
-<br>
-<br>
-<br>
-<br>
-
-
 ### How to Cite
 If you use this pipeline in your research, please cite this repository:
 > Kwenda, S. (2025). FungiPhyloGen: A Nextflow pipeline for fungal genomic epidemiology. https://github.com/stanikae/FungiPhyloGen
