@@ -28,7 +28,8 @@ Ensure you have the following installed on your system:
 ```bash
 mkdir -p $HOME/github
 cd $HOME/github
-git clone [https://github.com/stanikae/FungiPhyloGen.git](https://github.com/stanikae/FungiPhyloGen.git)
+
+git clone https://github.com/stanikae/FungiPhyloGen.git
 cd FungiPhyloGen
 ```
 
@@ -36,9 +37,13 @@ cd FungiPhyloGen
 FPG uses modular environments. You should create these in a central location (especially for HPC usage) and reference that path in nextflow.config.
 
 ```bash
-# Example: Creating environments in a central directory
-# Adjust path /spaces/stanford/anaconda3/envs to your preference
-conda env create -f lib/fpgtrimReads.yml --prefix /spaces/stanford/anaconda3/envs/fpgtrimReads
-conda env create -f lib/align.yml --prefix /spaces/stanford/anaconda3/envs/fpgAlign
-# ... repeat for other yml files in lib/
+conda env create --file lib/fpgtrimReads.yml --solver=libmamba -y
+conda env create --file lib/fpgtrimReads.yml --solver=libmamba -y
+conda env create --file lib/fpgDenovo.yml --solver=libmamba -y
+conda env create --file lib/vcftools.yml --solver=libmamba -y
+conda env create --file lib/align.yml --solver=libmamba -y
+conda env create --file lib/fpgVcf2FastaEnv.yml --solver=libmamba -y
+conda env create --file lib/vcfkit.yml --solver=libmamba -y
+conda env create --file lib/callVar.yml --solver=libmamba -y
+conda env create --file lib/phylo.yml --solver=libmamba -y
 ```
