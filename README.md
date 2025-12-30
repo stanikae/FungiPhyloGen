@@ -145,6 +145,47 @@ Results are saved in the `results/` folder (or directory specified by `--results
 | `multiqc/` | `multiqc_report.html` | Aggregate quality report. |
 
 
+## 🔬 Downstream Analysis: Targeted Mutation Report (*C. auris*)
+
+FungiPhyloGen includes helper scripts to perform targeted analysis of drug resistance genes (e.g., *ERG11*, *FKS1*). This workflow extracts missense variants from specific genes and generates a publication-ready CSV summary.
+
+### 📋 Phase 1: Reference Data (Gene Map)
+
+The analysis relies on a specific set of *Candida auris* Locus Tags. Create a file named `genelist.txt` containing the Locus Tags for the genes you wish to screen.
+
+**Reference Gene Map (Clade I - B8441 Reference):**
+
+| Gene Name | Locus Tag | Function / Description |
+| :--- | :--- | :--- |
+| **ERG11** | `B9J08_03698` | Azole resistance target (Lanosterol 14-alpha-demethylase) |
+| **FKS1** | `B9J08_02922` | Echinocandin resistance target (1,3-beta-glucan synthase) |
+| **FUR1** | `B9J08_01933` | Flucytosine resistance (Uracil phosphoribosyltransferase) |
+| **TAC1b** | `B9J08_04780` | Transcription factor (Azole resistance) |
+| **MRR1** | `B9J08_01918` | Transcription factor (Multi-drug resistance) |
+| **CDR1** | `B9J08_02123` | ABC Transporter (Azole efflux pump) |
+| **ERG3** | `B9J08_01595` | C-5 sterol desaturase |
+| **MEC3** | `B9J08_00960` | DNA damage checkpoint protein |
+| **PEA2** | `B9J08_03606` | Cell polarization protein |
+| **FLO8** | `B9J08_02359` | Transcription factor (Filamentation) |
+| **CIS2** | `B9J08_01093` | Gamma-glutamylcysteine synthetase |
+| **rpsU** | `B9J08_05449` | Ribosomal protein S21 (Control/Housekeeping) |
+
+### 🛠️ Phase 2: Execution
+
+This process uses two scripts located in the `scripts/` directory:
+1. `fpg_targeted_gene_mutations.sh`: Filters the Annotated VCF for missense variants in your target list.
+2. `clean_report_v2.py`: Formats the output into a readable CSV, mapping Locus Tags to Gene Names.
+
+#### Step 1: Create your Gene List
+Create a plain text file listing the Locus Tags you want to check (one per line).
+
+```bash
+# Example: Create genelist.txt for ERG11, FKS1, rpsU etc - you can use the locus tags from the table above
+nano genelist.txt
+```
+
+
+
 ## 🆘 Troubleshooting
 
 **1. "CRITICAL ERROR: Invalid Filter Profile"**
