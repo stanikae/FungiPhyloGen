@@ -47,3 +47,14 @@ conda env create --file lib/vcfkit.yml --solver=libmamba -y
 conda env create --file lib/callVar.yml --solver=libmamba -y
 conda env create --file lib/phylo.yml --solver=libmamba -y
 ```
+
+
+⚙️ Configuration (Crucial)
+To ensure the pipeline runs smoothly on different infrastructures, you must configure the Conda Paths and Filter Profiles in nextflow.config `Fungiphylogen.config`.
+
+1. Tool Paths (Conda & Picard)
+The pipeline requires absolute paths to the Conda environments and the Picard JAR file.
+
+Local Runs: The default is set to ${HOME}/anaconda3/envs.
+
+HPC Runs: You must override the condaCacheDir in the slurm profile within nextflow.config.
