@@ -207,6 +207,19 @@ bash ~/github/FungiPhyloGen/scripts/fpg_targeted_gene_mutations.sh \
     results/targeted_raw.csv
 ```
 
+#### Step 3: Generate Final Clean Report
+Run the Python script to map the tags to gene names and produce the final summary.
+
+```bash
+
+conda activate fpgCallVariants
+
+# Usage: python clean_report_v2.py <Input_Raw_CSV> > <Final_Report.csv>
+python ~/github/FungiPhyloGen/scripts/clean_report_v2.py \
+    results/targeted_raw.csv > results/resistance_report_final.csv
+```
+
+
 ## 🆘 Troubleshooting
 
 **1. "CRITICAL ERROR: Invalid Filter Profile"**
