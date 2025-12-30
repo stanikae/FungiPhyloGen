@@ -244,7 +244,7 @@ python ~/github/FungiPhyloGen/scripts/clean_report_v2.py \
 <img src="https://github.com/Terra-Informatix-Pty-Ltd/Intro-To-Linux/blob/main/Wits-Mycology-Logo_Screenshot%202025-08-10%20115556.png?raw=true" align="right" width="150">
 <img src="https://github.com/Terra-Informatix-Pty-Ltd/Intro-To-Linux/blob/main/BioInfoX-log.png?raw=true" align="right" width="150">
 
-**FungiPhyloGen** was developed by **Stanford Kwenda**
+**FungiPhyloGen** was developed by [**Stanford Kwenda**](https://www.linkedin.com/in/stanford-kwenda-7bb87530/)
 
 ### How to Cite
 If you use this pipeline in your research, please cite this repository:
