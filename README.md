@@ -35,7 +35,7 @@ cd FungiPhyloGen
 ```
 
 ### 3. Setup Environments
-FPG uses modular environments. You should create these in a central location (especially for HPC usage) and reference that path in nextflow.config.
+FPG uses modular environments. You should create these in a central location (especially for HPC usage) and reference that path in FungiPhyloGen.config.
 
 ```bash
 conda env create --file lib/fpgtrimReads.yml --solver=libmamba -y
