@@ -1,0 +1,39 @@
+cff-version: 1.2.0
+title: "FungiPhyloGen: A Nextflow pipeline for fungal genomic epidemiology"
+message: "If you use this software, please cite it using the metadata from this file."
+type: software
+authors:
+  - family-names: "Kwenda"
+    given-names: "Stanford"
+    orcid: "https://orcid.org/0000-0002-9008-4898"
+    affiliation: "Wits Mycology Division, South Africa"
+  - family-names: "Mwamba"
+    given-names: "Tshiama Miriam"
+    orcid: "https://orcid.org/0000-0001-9258-0273"
+  - family-names: "Naicker"
+    given-names: "Serisha"
+    orcid: "https://orcid.org/0000-0002-4445-1482"
+  - family-names: "Maphanga"
+    given-names: "Tsidiso G."
+    orcid: "https://orcid.org/0000-0002-6117-4309"
+  - family-names: "Nzimande"
+    given-names: "Silondiwe P."
+    orcid: "https://orcid.org/0000-0003-2618-8630"
+  - family-names: "Jallow"
+    given-names: "Sabelle"
+    orcid: "https://orcid.org/0000-0002-4436-5517"
+  - family-names: "Govender"
+    given-names: "Nelesh P."
+    orcid: "https://orcid.org/0000-0001-7869-9462"
+version: 1.0.0
+date-released: 2025-12-30
+license: MIT
+repository-code: "https://github.com/stanikae/FungiPhyloGen"
+keywords:
+  - bioinformatics
+  - genomics
+  - epidemiology
+  - fungi
+  - candida-auris
+  - nextflow
+  - phylogeny
