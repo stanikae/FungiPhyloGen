@@ -30,12 +30,12 @@ mkdir -p $HOME/github
 cd $HOME/github
 git clone [https://github.com/stanikae/FungiPhyloGen.git](https://github.com/stanikae/FungiPhyloGen.git)
 cd FungiPhyloGen
-
+```
 
 ### 3. Setup Environments
 FPG uses modular environments. You should create these in a central location (especially for HPC usage) and reference that path in nextflow.config.
 
-```
+```bash
 # Example: Creating environments in a central directory
 # Adjust path /spaces/stanford/anaconda3/envs to your preference
 conda env create -f lib/fpgtrimReads.yml --prefix /spaces/stanford/anaconda3/envs/fpgtrimReads
