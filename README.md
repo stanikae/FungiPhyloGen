@@ -185,7 +185,7 @@ This pipeline leverages the following excellent open-source tools. Please cite t
 
 ## 💰 Funding
 
-This work was supported by **[Insert Funding Body Name]** under grant number **[Insert Grant Number]**.
+This work was supported by **[]** under grant number **[]**.
 
 * **Principal Investigator:** [Professor Nelesh Govender](https://www.wits.ac.za/people/academic-a-z-listing/g/neleshgovenderwitsacza/)
 * **Grant Title:** []
