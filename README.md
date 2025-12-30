@@ -9,7 +9,7 @@ Built on **Nextflow**, FPG leverages containerized **Conda** environments to ens
 
 ## 🚀 Key Features
 
-* **Scatter-Gather Architecture:** Uses a scalable BCFtools-based variant calling workflow capable of handling 100+ samples efficiently.
+* **Scalable Parallelization (Scatter-Gather) Architecture:** Uses a scalable BCFtools-based variant calling workflow capable of handling 100+ samples efficiently.
 * **Robust Quality Control:** Automated adapter trimming (TrimGalore) and quality assessment (FastQC, MultiQC).
 * **Scientific Filtering:** Implements a **"Filter Profile"** strategy:
     * **Hard Filter:** Removes low-depth noise (`DP < 5`) per sample to optimize merging.
