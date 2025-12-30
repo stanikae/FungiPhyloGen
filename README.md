@@ -67,6 +67,7 @@ slurm {
     // This ensures the pipeline finds the correct Picard JAR
     params.PICARD = "${params.CacheDir}/fpgAlign/share/picard-2.27.4-0/picard.jar"
 }
+```
 
 ### 2. Filter Profiles
 FungiPhyloGen uses pre-defined profiles to switch between strict and lenient filtering logic without editing code. Use the `--filter_profile` flag at runtime.
