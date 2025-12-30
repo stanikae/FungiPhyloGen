@@ -184,7 +184,28 @@ Create a plain text file listing the Locus Tags you want to check (one per line)
 nano genelist.txt
 ```
 
+#### Step 2: Run the Extraction Script
+This step requires the `fpgCallVariants` environment (or any environment with SnpSift and BCFtools).
 
+```bash
+# 1. Start an interactive session (if on HPC)
+srun -J SNPann --pty bash
+```
+
+```bash
+# 2. Activate the environment
+conda activate fpgCallVariants
+```
+
+```bash
+# 3. Run the extraction script
+# Usage: bash fpg_targeted_gene_mutations.sh <Input_Ann_VCF> <Gene_List> <Output_VCF> <Output_Raw_CSV>
+bash ~/github/FungiPhyloGen/scripts/fpg_targeted_gene_mutations.sh \
+    results/snpeff_annotation/snpeff_ann.vcf \
+    genelist.txt \
+    results/targeted_output.vcf \
+    results/targeted_raw.csv
+```
 
 ## 🆘 Troubleshooting
 
