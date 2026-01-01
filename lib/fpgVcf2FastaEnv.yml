@@ -5,8 +5,10 @@ channels:
   - bioconda
   - defaults
 dependencies:
+  # Explicitly pin Python to a version compatible with old Numpy
+  - python=3.10
   - vcftools=0.1.16
   - scipy
+  # Best Practice: Move numpy to conda dependencies if possible
+  - numpy=1.23.5
   - pip
-  - pip:
-      - numpy==1.23.5

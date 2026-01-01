@@ -8,3 +8,4 @@ dependencies:
   - bcftools=1.16
   - snpeff=5.0
   - gatk4=4.3.0.0
+  - pandas
