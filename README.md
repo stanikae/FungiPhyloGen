@@ -248,7 +248,7 @@ python ~/github/FungiPhyloGen/scripts/clean_report_v2.py \
 
 ### How to Cite
 If you use this pipeline in your research, please cite this repository:
-> Kwenda, S., Mwamba, T. M., Naicker, S., Maphanga, T. G., Nzimande, S. P., Jallow, S., & Govender, N. P. (2025). FungiPhyloGen: A Nextflow pipeline for fungal genomic epidemiology (v1.0.0). Zenodo. https://doi.org/10.5281/zenodo.18097754
+> Kwenda, S., Mwamba, T. M., Naicker, S., Maphanga, T. G., Nzimande, S. P., Jallow, S., & Govender, N. P. (2026). FungiPhyloGen: A Nextflow pipeline for fungal genomic epidemiology (v1.1.0). Zenodo. https://doi.org/10.5281/zenodo.18121445
 
 ### Software References
 This pipeline leverages the following excellent open-source tools. Please cite them in your methods section:
