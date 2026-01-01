@@ -3,9 +3,8 @@ nextflow.enable.dsl=2
 
 
 process SPADES {
-  cpus 16
-  executor 'slurm'
-
+  label 'process_long' 
+ 
   //conda ("$params.condaPath/fpgDenovo" ? "$params.cacheDir/fpgDenovo" : null)
   //conda "$params.cacheDir/fpgDenovo"
   conda "$params.condaPath/fpgDenovo"

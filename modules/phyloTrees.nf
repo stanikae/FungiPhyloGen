@@ -6,8 +6,7 @@ nextflow.enable.dsl=2
 process RUNIQTREE {
  // tag "$sampleId"
 
-  cpus 16
-  executor 'slurm'
+  label 'process_high'
 
   conda "$params.cacheDir/fpgPhylogen"
   publishDir "$params.iq", mode: 'copy'
@@ -51,10 +50,8 @@ process RUNIQTREE {
 
 
 process RUNRAPIDNJ {
-
-   cpus 16
-   executor 'slurm'
-
+   label 'process_medium'
+   
    conda "$params.cacheDir/fpgPhylogen"
    publishDir "$params.nj", mode: 'copy'
 
@@ -90,9 +87,7 @@ process RUNRAPIDNJ {
 process RUNSNPDISTS {
  // tag "$sampleId"
 
-  cpus 12
-  executor 'slurm'
-
+  label 'process_high'
   conda "$params.cacheDir/fpgPhylogen"
   publishDir "$params.dist", mode: 'copy'
 

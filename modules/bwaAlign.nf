@@ -4,9 +4,7 @@ nextflow.enable.dsl=2
 
 process ALIGNBWAMEM {
   tag "${meta.id}"
-  
-  cpus 8
-  executor 'slurm'
+  label 'process_high'  
   
   conda "$params.cacheDir/fpgAlign"
   publishDir "$params.bwaMem", mode: 'copy'
@@ -39,9 +37,7 @@ process ALIGNBWAMEM {
 
 process MARKDUPS {
   tag "${meta.id}"
-
-  cpus 12
-  executor 'slurm'
+  label 'process_high'
   
   conda "$params.cacheDir/fpgAlign"
   publishDir "$params.bwaMem", mode: 'copy'
@@ -70,9 +66,7 @@ process MARKDUPS {
 
 process SORTMARKED {
   tag "${meta.id}"
-
-  cpus 10
-  executor 'slurm'
+  label 'process_high'
 
   conda "$params.cacheDir/fpgAlign"
   publishDir "$params.bwaMem", mode: 'copy'
@@ -95,9 +89,7 @@ process SORTMARKED {
 
 process SAMINDEX {
   tag "${meta.id}"
-
-  cpus 10
-  executor 'slurm'
+  label 'process_high'
 
   conda "$params.cacheDir/fpgAlign"
   publishDir "$params.bwaMem", mode: 'copy'

@@ -5,6 +5,7 @@ process GETREPEATS {
    conda "$params.cacheDir/fpgMaskRepeats"
   // publishDir "$params.refMasked", mode: 'copy'
   
+  label 'process_medium'
 
   input:
     file(ref)
@@ -33,6 +34,7 @@ process REPEATSBED {
    conda "$params.cacheDir/fpgMaskRepeats"
   // publishDir "$params.refMasked", mode: 'copy'
 
+  label 'process_medium'
 
   input:
     file(repeats)
@@ -64,6 +66,8 @@ process REPEATSBED {
 
 process MASKREF {
    conda "$params.cacheDir/fpgMaskRepeats"
+   label 'process_medium'
+
    publishDir "$params.refMasked", mode: 'copy'
 
 
@@ -92,6 +96,8 @@ process MASKREF {
 
 process INDEXREF {
   conda "$params.cacheDir/fpgAlign"
+  label 'process_medium'
+
   publishDir "$params.refIndex", mode: 'copy'
 
   input:

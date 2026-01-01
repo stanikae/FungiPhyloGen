@@ -8,8 +8,7 @@ process CALLVARIANTS {
     publishDir "$params.bcftl/raw_per_sample", mode: 'copy'
 
     conda "$params.cacheDir/fpgCallVariants"
-    cpus 8
-    executor 'slurm'
+    label 'process_high'
 
     input:
     tuple val(meta), path(bam)
@@ -48,8 +47,8 @@ process FILTERSAMPLE {
     publishDir "$params.bcftl/filtered_per_sample", mode: 'copy'
 
     conda "$params.cacheDir/fpgCallVariants"
-    cpus 8
-    executor 'slurm'
+    label 'process_high'
+
 
     input:
     tuple val(meta), path(bcf), path(bcf_idx)
@@ -79,8 +78,7 @@ process BCFMERGE {
     publishDir "$params.bcftl/merged", mode: 'copy'
 
     conda "$params.cacheDir/fpgCallVariants"
-    cpus 12
-    executor 'slurm'
+    label 'process_high'
 
     input:
     path bcf
@@ -109,8 +107,8 @@ process REHEADERVCF {
     publishDir "$params.bcftl/reheadered", mode: 'copy'
 
     conda "$params.cacheDir/fpgCallVariants"
-    cpus 8
-    executor 'slurm'
+    label 'process_high'
+
 
     input:
     path bcf
@@ -138,8 +136,7 @@ process BCFNORM {
     publishDir "$params.bcftl/normalized", mode: 'copy'
 
     conda "$params.cacheDir/fpgCallVariants"
-    cpus 12
-    executor 'slurm'
+    label 'process_high'
 
     input:
     path bcf
@@ -172,8 +169,7 @@ process SOFTFILTERVCF {
     publishDir "$params.bcftl/soft_filtered", mode: 'copy'
 
     conda "$params.cacheDir/fpgCallVariants"
-    cpus 12
-    executor 'slurm'
+    label 'process_high'
 
     input:
     path bcf
@@ -210,8 +206,7 @@ process FILTERVCF {
     publishDir "$params.bcftl/final_vcf", mode: 'copy'
 
     conda "$params.cacheDir/fpgCallVariants"
-    cpus 12
-    executor 'slurm'
+    label 'process_high'
 
     input:
     path bcf
@@ -250,8 +245,7 @@ process VCFSNPS2FASTA {
     publishDir "$params.bcftl/msa", mode: 'copy'
 
     conda "$params.cacheDir/fpgVcf2FastaEnv"
-    cpus 2
-    executor 'slurm'
+    label 'process_medium'
 
     input:
     path vcf
@@ -263,14 +257,9 @@ process VCFSNPS2FASTA {
 
     script:
     """
-    # --- FIX START ---
-    # Decompress the VCF because the Python script cannot read .gz
-    # We pipe to a new file named 'input.vcf'
     gunzip -c $vcf > input.vcf
     
-    # Point the python script to the uncompressed file
     readlink -f input.vcf > vcf_infile
-    # --- FIX END ---
 
     nsamples=\$(cat "$samples" | wc -l)
     amb_samples=\$(awk "BEGIN {print (\$nsamples/100)*10}" | awk '{ print int(\$1) }')
@@ -290,8 +279,7 @@ process VCF2PHYLIP {
     publishDir "$params.bcftl/phylip", mode: 'copy'
 
     conda "$params.cacheDir/fpgVcfTools"
-    cpus 2
-    executor 'slurm'
+    label 'process_medium'
 
     input:
     path vcf

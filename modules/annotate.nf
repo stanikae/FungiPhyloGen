@@ -3,9 +3,8 @@ nextflow.enable.dsl=2
 
 process RUNSNPEFF {
     tag "snpeff"
-    cpus 4
-    executor 'slurm'
-
+    label 'process_high'
+    
     conda "$params.cacheDir/fpgCallVariants"
     publishDir "$params.ann", mode: 'copy'
 
