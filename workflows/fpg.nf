@@ -127,12 +127,10 @@ workflow FUNGIPHYLOGEN {
         .filter { it != null } 
         .set { ch_input_reads }
     
-    def contaminants = file("/spaces/stanford/anaconda3/envs/fpgtrimReads/opt/fastqc-0.11.9/Configuration/contaminant_list.txt",checkIfExists: true)
-    def adapters     = file("/spaces/stanford/anaconda3/envs/fpgtrimReads/opt/fastqc-0.11.9/Configuration/adapter_list.txt",checkIfExists: true)
 
     // OPTIONAL: DEBUG PRINT
-    log.info "Contaminants found: ${contaminants}"
-    log.info "Adapters:     $adapters"
+    log.info "Contaminants found: ${params.FASTQC_CONTAMINANTS}"
+    log.info "Adapters:         ${params.FASTQC_ADAPTERS}"
 
 
     // --- REFERENCE PREPARATION ---
@@ -152,20 +150,16 @@ workflow FUNGIPHYLOGEN {
         log.info "Trimming raw reads."
 
         // --- MULTIQC ON RAW READS ---
-        // FIX: Removed file("$...") wrapper. Passed variables directly.
-        FASTQCRAW(contaminants, adapters, ch_input_reads)
+        FASTQCRAW(file(params.FASTQC_CONTAMINANTS), file(params.FASTQC_ADAPTERS), ch_input_reads)
         
-        // FIX: Added .zip to collect only the zip files
         MULTIQCRAW(FASTQCRAW.out.zip.collect())
 
         trim(ch_input_reads)
         ch_reads_for_alignment = trim.out.rds
 
         // --- MULTIQC ON CLEAN READS ---
-        // FIX: Removed file("$...") wrapper here too.
-        FASTQCCLEAN(contaminants, adapters, ch_reads_for_alignment)
+        FASTQCCLEAN(file(params.FASTQC_CONTAMINANTS), file(params.FASTQC_ADAPTERS), ch_reads_for_alignment)
         
-        // FIX: Added .zip here too
         MULTIQCCLEAN(FASTQCCLEAN.out.zip.collect())
     }
     
