@@ -39,7 +39,7 @@ FPG uses modular environments. You should create these in a central location (es
 
 ```bash
 conda env create --file lib/fpgtrimReads.yml --solver=libmamba -y
-conda env create --file lib/fpgtrimReads.yml --solver=libmamba -y
+conda env create --file lib/mask.yml --solver=libmamba -y
 conda env create --file lib/fpgDenovo.yml --solver=libmamba -y
 conda env create --file lib/vcftools.yml --solver=libmamba -y
 conda env create --file lib/align.yml --solver=libmamba -y
