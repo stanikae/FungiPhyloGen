@@ -133,6 +133,23 @@ nextflow run main_fpg.nf \
     --samplesheet ./samplesheet.csv \
     --filter_profile cauris_small
 ```
+
+### 4. Running with Custom Reference Genomes
+By default, the pipeline uses the bundled _Candida auris_ reference genome. To use your own reference genome (e.g., for _C. parapsilosis_, _Emergomyces_, or other species), you must override the defaults using the `--refseq` and `--gbk` flags.
+
+
+```bash
+nextflow run main_fpg.nf \
+   -c FungiPhyloGen.config \
+   -profile standard \
+   --samplesheet ./samplesheet.csv \
+   --refseq /absolute/path/to/your/custom_reference.fna \
+   --gbk /absolute/path/to/your/custom_reference.gbk \
+   --filter_profile general
+```
+
+> **Note:** Ensure you use **absolute paths** for your reference files. If the pipeline cannot locate the files specified in these flags, it will fail.
+
 ## 📂 Outputs
 Results are saved in the `results/` folder (or directory specified by `--resultsDir`).
 
