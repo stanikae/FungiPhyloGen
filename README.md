@@ -35,19 +35,24 @@ cd FungiPhyloGen
 ```
 
 ### 3. Setup Environments
-FPG uses modular environments. You should create these in a central location (especially for HPC usage) and reference that path in `FungiPhyloGen.config`.
+FPG uses modular environments. To streamline installation, automated setup scripts are provided for both Linux and macOS. These scripts will automatically build all required Conda environments.
+(Note: Environments should ideally be created in a central location for HPC usage, and that path must be referenced in `FungiPhyloGen.config`).
+
+For Linux Users:
+```bash
+# Run the standard automated setup script
+./setup_envs.sh
+```
+
+For macOS Users (Apple Silicon & Intel):
+Because specialized bioinformatics tools require Intel-compiled packages, macOS users must use the OSX-specific script, which automatically handles architecture emulation.
 
 ```bash
-conda env create --file lib/fpgtrimReads.yml --solver=libmamba -y
-conda env create --file lib/fpgSNPannotation.yml --solver=libmamba -y
-conda env create --file lib/mask.yml --solver=libmamba -y
-conda env create --file lib/fpgDenovo.yml --solver=libmamba -y
-conda env create --file lib/vcftools.yml --solver=libmamba -y
-conda env create --file lib/align.yml --solver=libmamba -y
-conda env create --file lib/fpgVcf2FastaEnv.yml --solver=libmamba -y
-conda env create --file lib/vcfkit.yml --solver=libmamba -y
-conda env create --file lib/callVar.yml --solver=libmamba -y
-conda env create --file lib/phylo.yml --solver=libmamba -y
+# Make the script executable
+chmod +x setup_envs_osx.sh
+
+# Run the OSX automated setup script
+./setup_envs_osx.sh
 ```
 
 ## ⚙️ Configuration (Crucial)
