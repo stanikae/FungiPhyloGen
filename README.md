@@ -275,13 +275,18 @@ If you use this pipeline in your research, please cite this repository:
 > Kwenda, S., Mwamba, T. M., Naicker, S., Maphanga, T. G., Nzimande, S. P., Jallow, S., & Govender, N. P. (2026). FungiPhyloGen: A Nextflow pipeline for fungal genomic epidemiology (v1.1.0). Zenodo. https://doi.org/10.5281/zenodo.18121445
 
 ### Software References
-This pipeline leverages the following excellent open-source tools. Please cite them in your methods section:
-* **Nextflow:** Di Tommaso, P., et al. (2017). *Nature Biotechnology*.
-* **BCFtools:** Danecek, P., et al. (2021). *GigaScience*.
-* **IQ-TREE:** Minh, B. Q., et al. (2020). *Molecular Biology and Evolution*.
-* **SnpEff:** Cingolani, P., et al. (2012). *Fly*.
-* **MultiQC:** Ewels, P., et al. (2016). *Bioinformatics*.
-* **RapidNJ:** Simonsen, M., et al. (2011). *WABI*.
+This pipeline leverages the following excellent open-source tools. If you use FungiPhyloGen, please ensure you also cite the underlying tools in your methods section:
+
+* **Nextflow:** Di Tommaso, P., et al. (2017). Nextflow enables reproducible computational workflows. *Nature Biotechnology*.
+* **FastQC:** Andrews, S. (2010). FastQC: A Quality Control Tool for High Throughput Sequence Data.
+* **Trim Galore:** Krueger, F. (2015). Trim Galore.
+* **BWA:** Li, H., & Durbin, R. (2009). Fast and accurate short read alignment with Burrows-Wheeler transform. *Bioinformatics*.
+* **SAMtools & BCFtools:** Danecek, P., et al. (2021). Twelve years of SAMtools and BCFtools. *GigaScience*.
+* **SnpEff:** Cingolani, P., et al. (2012). A program for annotating and predicting the effects of single nucleotide polymorphisms, SnpEff. *Fly*.
+* **snp-dists:** Seemann, T. (2020). snp-dists: Pairwise SNP distance matrix from a FASTA sequence alignment.
+* **IQ-TREE:** Minh, B. Q., et al. (2020). IQ-TREE 2: New Models and Efficient Methods for Phylogenetic Inference in the Genomic Era. *Molecular Biology and Evolution*.
+* **RapidNJ:** Simonsen, M., et al. (2011). Rapid neighbour-joining. *WABI*.
+* **MultiQC:** Ewels, P., et al. (2016). MultiQC: summarize analysis results for multiple tools and samples in a single report. *Bioinformatics*.
 
 ## 💰 Funding
 
