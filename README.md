@@ -36,6 +36,7 @@ cd FungiPhyloGen
 
 ### 3. Setup Environments
 FPG uses modular environments. To streamline installation, automated setup scripts are provided for both Linux and macOS. These scripts will automatically build all required Conda environments.
+
 (Note: Environments should ideally be created in a central location for HPC usage, and that path must be referenced in `FungiPhyloGen.config`).
 
 For Linux Users:
