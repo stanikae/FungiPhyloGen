@@ -165,7 +165,7 @@ Results are saved in the `results/` folder (or directory specified by `--results
 | `variants/` | `final_vcf/final.pass.vcf.gz` | **The Final Output.** High-quality SNPs only. |
 | `snpeff_annotation/` | `snpeff_ann.vcf` | VCF annotated with gene changes (Synonymous/Missense). |
 | `iqtree_phylogeny/` | `*.treefile` | Maximum Likelihood tree (Newick format). |
-| `snp_distances/` | `snp_distance_matrix.tsv` | Pairwise SNP count matrix. |
+| `snp_distances/snpdists` | `FungiPhylogen.snpdist.csv` | Pairwise SNP count matrix. |
 | `multiqc/` | `multiqc_report.html` | Aggregate quality report. |
 
 
