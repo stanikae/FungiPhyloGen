@@ -55,9 +55,9 @@ process MARKDUPS {
    
    # FIX: Use meta.id for output filenames
    picard MarkDuplicates \\
-   --INPUT $bam \\
-   --OUTPUT ${meta.id}_marked.bam \\
-   --METRICS_FILE ${meta.id}_metrics.txt \\
+   --INPUT "$bam" \\
+   --OUTPUT "${meta.id}_marked.bam" \\
+   --METRICS_FILE "${meta.id}_metrics.txt" \\
    --ASSUME_SORTED true \\
    --VALIDATION_STRINGENCY SILENT
   """
@@ -75,14 +75,14 @@ process SORTMARKED {
     tuple val(meta), path(bam)
 
   output:
-    tuple val(meta), path('*sorted_marked.bam'), emit: sorted
+    tuple val(meta), path("${meta.id}_sorted_marked.bam"), emit: sorted
 
   script:
   """
    #!/usr/bin/env bash
-   
-   # FIX: Use meta.id
-   samtools sort --threads ${task.cpus} --output-fmt BAM "$bam" -o ${meta.id}_sorted_marked.bam
+   set -euo pipefail
+
+   samtools sort --threads ${task.cpus} --output-fmt BAM -o "${meta.id}_sorted_marked.bam" "$bam"
   """
 }
 
@@ -98,13 +98,14 @@ process SAMINDEX {
     tuple val(meta), path(bam)
 
   output:
-    tuple val(meta), path('*.bai'), emit: bai
+    tuple val(meta), path("${meta.id}_sorted_marked.bam.bai"), emit: bai
 
   script:
   """
    #!/usr/bin/env bash
+   set -euo pipefail
 
-   samtools index -@ ${task.cpus} $bam -o ${bam}.bai
+   samtools index -@ ${task.cpus} -o "${bam}.bai" "$bam"
   """
 }
 
