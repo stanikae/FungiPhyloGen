@@ -6,7 +6,7 @@ process trimReads {
   label 'process_medium'
 
   conda "$params.cacheDir/fpgtrimReads" 
-  publishDir "$params.trm", mode: 'copy'
+  publishDir "$params.trm", mode: 'symlink'
 
   input:
   tuple val(meta), path(reads) 

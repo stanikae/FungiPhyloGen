@@ -5,7 +5,7 @@ nextflow.enable.dsl=2
 
 process CALLVARIANTS {
     tag "${meta.id}"
-    publishDir "$params.bcftl/raw_per_sample", mode: 'copy'
+    publishDir "$params.bcftl/raw_per_sample", mode: 'symlink'
 
     conda "$params.cacheDir/fpgCallVariants"
     label 'process_high'
@@ -44,7 +44,7 @@ process CALLVARIANTS {
 
 process FILTERSAMPLE {
     tag "${meta.id}"
-    publishDir "$params.bcftl/filtered_per_sample", mode: 'copy'
+    publishDir "$params.bcftl/filtered_per_sample", mode: 'symlink'
 
     conda "$params.cacheDir/fpgCallVariants"
     label 'process_high'
@@ -75,7 +75,7 @@ process FILTERSAMPLE {
 
 process BCFMERGE {
     tag "merge"
-    publishDir "$params.bcftl/merged", mode: 'copy'
+    publishDir "$params.bcftl/merged", mode: 'symlink'
 
     conda "$params.cacheDir/fpgCallVariants"
     label 'process_high'
@@ -104,7 +104,7 @@ process BCFMERGE {
 
 process REHEADERVCF {
     tag "reheader"
-    publishDir "$params.bcftl/reheadered", mode: 'copy'
+    publishDir "$params.bcftl/reheadered", mode: 'symlink'
 
     conda "$params.cacheDir/fpgCallVariants"
     label 'process_high'

@@ -7,7 +7,7 @@ process ALIGNBWAMEM {
   label 'process_high'  
   
   conda "$params.cacheDir/fpgAlign"
-  publishDir "$params.bwaMem", mode: 'copy'
+  publishDir "$params.bwaMem", mode: 'symlink'
 
   input:
     val ready 
@@ -40,7 +40,7 @@ process MARKDUPS {
   label 'process_high'
   
   conda "$params.cacheDir/fpgAlign"
-  publishDir "$params.bwaMem", mode: 'copy'
+  publishDir "$params.bwaMem", mode: 'symlink'
 
   input:
     tuple val(meta), path(bam)
@@ -69,7 +69,7 @@ process SORTMARKED {
   label 'process_high'
 
   conda "$params.cacheDir/fpgAlign"
-  publishDir "$params.bwaMem", mode: 'copy'
+  publishDir "$params.bwaMem", mode: 'symlink'
 
   input:
     tuple val(meta), path(bam)
@@ -92,7 +92,7 @@ process SAMINDEX {
   label 'process_high'
 
   conda "$params.cacheDir/fpgAlign"
-  publishDir "$params.bwaMem", mode: 'copy'
+  publishDir "$params.bwaMem", mode: 'symlink'
 
   input:
     tuple val(meta), path(bam)

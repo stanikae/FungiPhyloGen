@@ -8,7 +8,7 @@ process fqc {
 
   conda "$params.cacheDir/fpgtrimReads"
   
-  publishDir "$params.fqcOut", mode: 'copy'
+  publishDir "$params.fqcOut", mode: 'symlink'
 
   input:
     path cont
