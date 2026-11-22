@@ -82,20 +82,15 @@ process RUNRAPIDNJ {
 }
 
 
-
-
 process RUNSNPDISTS {
- // tag "$sampleId"
-
   label 'process_high'
+
   conda "$params.cacheDir/fpgPhylogen"
   publishDir "$params.dist", mode: 'copy'
 
-
   input:
-    //val ready
-    path(msa)
-    path(vmsa)
+    path msa
+    path vmsa
 
   output:
     path("snpdists/*snpdist.csv"), emit: dist
@@ -103,43 +98,57 @@ process RUNSNPDISTS {
     path("snpdists/*vcf2phylo.snpdist.csv"), emit: vdist
     path("snpdists/*.vcf2phylo.snpdistmolten.csv"), emit: vmolt
 
-
   script:
-
-
   """
   #!/usr/bin/env bash
+  set -euo pipefail
 
-  if ! [[ -d snpdists ]]; then mkdir -p snpdists; fi
+  mkdir -p snpdists
 
-  pfx=`basename $projectDir`
+  pfx=\$(basename "$projectDir")
 
-  snp-dists -j ${task.cpus} -c $msa > snpdists/\${pfx}.snpdist.csv
-  snp-dists -j ${task.cpus} -a -m -c $msa > snpdists/\${pfx}.snpdistmolten.csv
+  snp-dists \
+    -j ${task.cpus} \
+    -c \
+    "$msa" \
+    > snpdists/\${pfx}.snpdist.csv
 
-  snp-dists -j ${task.cpus} -c $vmsa > snpdists/\${pfx}.vcf2phylo.snpdist.csv
-  snp-dists -j ${task.cpus} -a -m -c $vmsa > snpdists/\${pfx}.vcf2phylo.snpdistmolten.csv
+  snp-dists \
+    -j ${task.cpus} \
+    -a \
+    -m \
+    -c \
+    "$msa" \
+    > snpdists/\${pfx}.snpdistmolten.csv
 
-  if [[ -f "snpdists/\${pfx}.snpdist.csv" ]]; then
-	sed -i 's/_sorted_marked.bam//g' snpdists/\${pfx}.snpdist.csv
-  fi
+  snp-dists \
+    -j ${task.cpus} \
+    -c \
+    "$vmsa" \
+    > snpdists/\${pfx}.vcf2phylo.snpdist.csv
 
-  if [[ -f "snpdists/\${pfx}.snpdistmolten.csv" ]]; then
-       sed -i 's/_sorted_marked.bam//g' snpdists/\${pfx}.snpdistmolten.csv 
-  fi
+  snp-dists \
+    -j ${task.cpus} \
+    -a \
+    -m \
+    -c \
+    "$vmsa" \
+    > snpdists/\${pfx}.vcf2phylo.snpdistmolten.csv
 
-
-  if [[ -f "snpdists/\${pfx}.vcf2phylo.snpdist.csv" ]]; then
-        sed -i 's/_sorted_marked.bam//g' snpdists/\${pfx}.vcf2phylo.snpdist.csv
-  fi
-
-  if [[ -f "snpdists/\${pfx}.vcf2phylo.snpdistmolten.csv" ]]; then
-       sed -i 's/_sorted_marked.bam//g' snpdists/\${pfx}.vcf2phylo.snpdistmolten.csv
-  fi
-
+  for file in \
+    snpdists/\${pfx}.snpdist.csv \
+    snpdists/\${pfx}.snpdistmolten.csv \
+    snpdists/\${pfx}.vcf2phylo.snpdist.csv \
+    snpdists/\${pfx}.vcf2phylo.snpdistmolten.csv
+  do
+    if [[ -s "\$file" ]]; then
+      sed -i.bak 's/_sorted_marked\\.bam//g' "\$file"
+      rm -f "\${file}.bak"
+    fi
+  done
   """
-
 }
+
 
 
 
