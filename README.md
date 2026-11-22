@@ -1,4 +1,4 @@
-# FungiPhylogen 🧬🍄
+# FungiPhyloGen 🧬🍄
 [![DOI](https://zenodo.org/badge/547808488.svg)](https://doi.org/10.5281/zenodo.18097753)
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A521.10.3-23aa62.svg?labelColor=000000)](https://www.nextflow.io/)
 [![run with conda](http://img.shields.io/badge/run%20with-conda-3EB049?labelColor=000000&logo=anaconda)](https://docs.conda.io/en/latest/)
@@ -70,25 +70,85 @@ The pipeline requires absolute paths to the Conda environments and the Picard JA
 slurm {
     // ...
     // UPDATE THIS PATH to your central HPC conda environment location e.g.
-    params.CacheDir = "/scratch/package/anaconda/anaconda3_2023-02-27/envs" 
+    params.CacheDir = "/scratch/package/anaconda/anaconda3/envs" 
     
     // This ensures the pipeline finds the correct Picard JAR
     params.PICARD = "${params.CacheDir}/fpgAlign/share/picard-2.27.4-0/picard.jar"
 }
 ```
 
-### 2. Filter Profiles
-FungiPhyloGen uses pre-defined profiles to switch between strict and lenient filtering logic. Use the `--filter_profile` flag at runtime.
+### 2. Haploid population-SNP filter profiles
 
-| Profile | Target Organism | Filter Logic & Use Case |
-| :--- | :--- | :--- |
-| `general` | **All Fungi** | **Recommended Default.** Balanced filters with purity check (AF > 0.75). Use for *Histoplasma*, *Emergomyces*, etc. |
-| `cauris_small` | *C. auris* | **Standard Purity.** Identical to `general`. |
-| `cauris_batch` | *C. auris* | **Core Consensus.** Allows heterozygous calls but removes sites with >20% missing data. |
-| `wanomalus_small` | *W. anomalus* | **High Stringency.** Very strict Quality/Depth ratio (QD > 0.1). |
-| `wanomalus_batch` | *W. anomalus* | **Ultra-High Purity.** Requires AF > 0.85. Ideal for defining reference SNPs. |
-| `cparapsilosis` | *C. parapsilosis* | **Custom Metric.** Uses specialized `QUAL/MAX(AD)` ratio. |
-| `cneoformans` | *C. neoformans* | **Standard Purity.** Identical to `general`. |
+FungiPhyloGen applies species-appropriate population-SNP filters to the normalized multi-sample BCF. Select a profile at runtime with:
+
+```bash
+--filter_profile <profile>
+```
+
+| Profile | Population AF threshold | Description |
+|---|---:|---|
+| `general` | ≥ 0.25 | Default population-level haploid SNP profile |
+| `cauris` | ≥ 0.25 | Canonical *Candida auris* population-SNP profile |
+| `cauris_small` | ≥ 0.25 | Backward-compatible alias for `cauris` |
+| `cauris_batch` | ≥ 0.25 | Backward-compatible alias for `cauris` |
+| `wanomalus_small` | ≥ 0.75 | Conservative *Wickerhamomyces anomalus* population-SNP profile |
+| `wanomalus_batch` | ≥ 0.85 | Ultra-high-purity *W. anomalus* population-SNP profile |
+| `cneoformans` | ≥ 0.25 | *Cryptococcus neoformans* population-SNP profile |
+| `cparapsilosis` | Species-specific | *Candida parapsilosis* profile using its dedicated depth-normalized expression |
+
+For new *C. auris* analyses, use:
+
+```bash
+--filter_profile cauris
+```
+
+`cauris_small` and `cauris_batch` are backward-compatible aliases for `cauris`. All three profile names apply the same filtering expression.
+
+#### Population-SNP criteria
+
+The `general`, `cauris`, and `cneoformans` profiles exclude a record when any of the following is true:
+
+```text
+TYPE!="snp"
+MQ<40
+QUAL<30
+FS>60
+MQSBZ<-2.0 or MQSBZ>2.0
+INFO/AF<0.25
+```
+
+The *W. anomalus* profiles use the same core criteria with higher population allele-frequency thresholds:
+
+```text
+wanomalus_small: INFO/AF>=0.75
+wanomalus_batch: INFO/AF>=0.85
+```
+
+These thresholds construct conservative, population-representative SNP sets. They are not intended for analyses that must retain rare, private, or low-frequency variants.
+
+#### Population allele annotations
+
+After normalization, FungiPhyloGen uses `bcftools +fill-tags` to materialize `INFO/AC`, `INFO/AN`, and `INFO/AF`. For haploid datasets, `AF = AC / AN`.
+
+#### QUAL-by-depth change
+
+FungiPhyloGen does not use merged-callset `QUAL/INFO/DP` as a filtering criterion. Samples are called independently and their BCF files are subsequently merged. The merged `QUAL` value is not recomputed as a joint-cohort confidence score, while `INFO/DP` increases with cohort depth; consequently, this ratio is cohort-depth dependent and is not equivalent to GATK QD.
+
+FungiPhyloGen remains strictly BCFtools-based and uses explicit BCFtools annotations for site quality, mapping quality, strand bias, and population allele representation.
+
+#### Missing-genotype filtering
+
+The population-SNP profiles do not apply `F_MISSING`. The workflow uses `bcftools merge -0`, which can represent absent sample records as reference genotypes and therefore does not provide a reliable basis for cohort missingness filtering.
+
+#### Upstream per-sample filtering
+
+The preliminary per-sample filter is:
+
+```text
+TYPE="snp" && QUAL>=20 && INFO/DP>=5
+```
+
+This permissive filter is applied before merging. Final population-SNP selection is performed on the normalized multi-sample callset with the selected profile.
 
 
 ## 🏃 Usage
@@ -124,7 +184,7 @@ nextflow run main_fpg.nf \
     -profile slurm \
     -resume \
     --samplesheet ./samplesheet.csv \
-    --filter_profile cauris_small \
+    --filter_profile cauris \
     --prjName "FPG_Run01"
 ```
 
@@ -137,7 +197,7 @@ nextflow run main_fpg.nf \
     -c FungiPhyloGen.config \
     -profile standard \
     --samplesheet ./samplesheet.csv \
-    --filter_profile cauris_small
+    --filter_profile cauris
 ```
 
 ### 4. Running with Custom Reference Genomes
@@ -294,75 +354,3 @@ This work was supported by **[]** under grant number **[]**.
 
 * **Principal Investigator:** [Professor Nelesh Govender](https://www.wits.ac.za/people/academic-a-z-listing/g/neleshgovenderwitsacza/)
 * **Grant Title:** []
-
-## Haploid population-SNP filter profiles
-
-FungiPhyloGen applies species-appropriate population-SNP filters to the normalized multi-sample BCF.
-
-Select a profile using:
-
-```bash
---filter_profile <profile>
-```
-
-### Available profiles
-
-| Profile | Population AF threshold | Description |
-|---|---:|---|
-| `general` | ≥ 0.25 | Default population-level haploid SNP profile |
-| `cauris` | ≥ 0.25 | Canonical *Candida auris* population-SNP profile |
-| `cauris_small` | ≥ 0.25 | Backward-compatible alias for `cauris` |
-| `cauris_batch` | ≥ 0.25 | Backward-compatible alias for `cauris` |
-| `wanomalus_small` | ≥ 0.75 | Conservative *Wickerhamomyces anomalus* population-SNP profile |
-| `wanomalus_batch` | ≥ 0.85 | Ultra-high-purity *W. anomalus* population-SNP profile |
-| `cneoformans` | ≥ 0.25 | *Cryptococcus neoformans* population-SNP profile |
-| `cparapsilosis` | Species-specific | Existing *Candida parapsilosis* profile pending separate validation |
-
-For new *C. auris* analyses, use:
-
-```bash
---filter_profile cauris
-```
-
-The older `cauris_small` and `cauris_batch` names remain supported for backward compatibility. Both aliases resolve to the canonical `cauris` filter; filtering no longer changes according to cohort size.
-
-### Population-SNP criteria
-
-The `general`, `cauris`, and `cneoformans` profiles exclude records meeting any of the following conditions:
-
-```text
-TYPE!="snp"
-MQ<40
-QUAL<30
-FS>60
-MQSBZ<-2.0 or MQSBZ>2.0
-INFO/AF<0.25
-```
-
-The *W. anomalus* profiles use the same core site-quality criteria but require AF ≥ 0.75 for `wanomalus_small` and AF ≥ 0.85 for `wanomalus_batch`.
-
-These allele-frequency thresholds intentionally construct conservative, population-representative SNP sets. They are not intended for analyses requiring rare, private, or low-frequency variants.
-
-### Population allele annotations
-
-After normalization, FungiPhyloGen uses `bcftools +fill-tags` to materialize `INFO/AC`, `INFO/AN`, and `INFO/AF`. For haploid datasets, AF is calculated as AC divided by AN.
-
-### QUAL-by-depth change
-
-The former merged-callset `QUAL/INFO/DP` expression was removed. FungiPhyloGen calls samples independently and subsequently merges their BCF files. The merged QUAL value is not recomputed as a joint-cohort confidence score, whereas INFO/DP increases with cohort depth. The ratio was therefore cohort-depth dependent and was not equivalent to GATK QD.
-
-FungiPhyloGen remains strictly BCFtools-based and uses explicit BCFtools annotations for site quality, mapping quality, strand bias, and population allele representation.
-
-### Missing-genotype filtering
-
-Profile-level `F_MISSING` filtering is not currently applied because `bcftools merge -0` can represent absent sample records as reference genotypes. Missing-genotype filtering will be reconsidered after missing calls are preserved and validated independently.
-
-### Upstream per-sample filtering
-
-The preliminary per-sample filter remains unchanged:
-
-```text
-TYPE="snp" && QUAL>=20 && INFO/DP>=5
-```
-
-Final population-SNP selection is performed on the normalized multi-sample callset using the selected profile.
