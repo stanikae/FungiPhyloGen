@@ -4,3 +4,7 @@
 resolved_config*.txt
 **/__pycache__/
 *.py[cod]
+
+# Python bytecode
+__pycache__/
+*.py[cod]
