@@ -150,18 +150,27 @@ process BCFNORM {
 
     script:
     """
+    #!/usr/bin/env bash
+    set -euo pipefail
+
     bcftools norm \
         -m -any \
         --threads ${task.cpus} \
-        -f $ref \
-        $bcf \
+        -f "$ref" \
+        "$bcf" \
+        -Ou \
+        2> norm.log \
+    | bcftools +fill-tags \
         -Ob \
-        -o normalized.bcf 2> norm.log
+        -o normalized.bcf \
+        -- \
+        -t AC,AN,AF
 
-    bcftools index normalized.bcf
+    bcftools index \
+        --threads ${task.cpus} \
+        normalized.bcf
     """
 }
-
 
 
 process SOFTFILTERVCF {
@@ -181,24 +190,28 @@ process SOFTFILTERVCF {
 
     script:
     """
-    # BCFtools handles strand bias by lowering the QUAL score, 
-    # so we rely on QUAL < 30 to catch bias issues.
-    
-    # Using Filter Logic from Config:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Apply the selected haploid population-SNP profile to the normalized
+    # multi-sample BCF. AC, AN, and AF have been materialized by fill-tags.
+    #
+    # Effective exclusion expression:
     # ${params.active_filter}
-    
+
     bcftools filter \
         --threads ${task.cpus} \
-        -s 'FAIL' \
+        -s FAIL \
         -e '${params.active_filter}' \
         -Ob \
         -o soft_filtered.bcf \
-        $bcf
+        "$bcf"
 
-    bcftools index soft_filtered.bcf
+    bcftools index \
+        --threads ${task.cpus} \
+        soft_filtered.bcf
     """
 }
-
 
 
 process FILTERVCF {
