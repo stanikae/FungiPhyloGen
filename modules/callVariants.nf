@@ -237,7 +237,6 @@ process FILTERVCF {
     path "final.pass.bcf.csi", emit: idx_pass, optional: true
     path "final.pass.vcf.gz", emit: vcf_pass, optional: true
     path "final.pass.vcf.gz.tbi", emit: tbi_pass, optional: true
-    path "sample_list.txt", emit: sample_list, optional: true
 
     script:
     """
@@ -254,7 +253,6 @@ process FILTERVCF {
         bcftools view -Oz -o final.pass.vcf.gz final.pass.bcf
         bcftools index -t final.pass.vcf.gz
 
-        bcftools query -l final.pass.bcf > sample_list.txt
     fi
     """    
 }
@@ -269,29 +267,29 @@ process VCFSNPS2FASTA {
 
     input:
     path vcf
-    path samples
 
     output:
     path "fpg_snp_aln.fa", emit: snp_msa
-    path "vcf_infile", emit: infile
+    path "fpg_snp_sites.tsv", emit: sites
+    path "fpg_snp_alignment_qc.tsv", emit: alignment_qc
+    path "fpg_snp_distances.tsv", emit: distances
+    path "fpg_snp_comparable_sites.tsv", emit: comparable_sites
+    path "fpg_snp_manifest.json", emit: manifest
 
     script:
     """
-    gunzip -c $vcf > input.vcf
-    
-    readlink -f input.vcf > vcf_infile
+    #!/usr/bin/env bash
+    set -euo pipefail
 
-    nsamples=\$(cat "$samples" | wc -l)
-    amb_samples=\$(awk "BEGIN {print (\$nsamples/100)*10}" | awk '{ print int(\$1) }')
+    GIT_COMMIT=\$(git -C "$projectDir" rev-parse HEAD 2>/dev/null || printf 'unknown')
 
-    python $projectDir/templates/broad-fungalgroup/scripts/SNPs/vcfSnpsToFasta.py \
-        --max_amb_samples \$amb_samples \
-        vcf_infile > fpg_snp_aln.fa
+    python "$projectDir/scripts/fpg_vcf_to_snp_alignment.py" \
+        --vcf "$vcf" \
+        --output-prefix fpg_snp \
+        --pipeline-version-file "$projectDir/VERSION" \
+        --git-commit "\$GIT_COMMIT"
     """
 }
-
-
-
 
 
 process VCF2PHYLIP {
@@ -344,12 +342,17 @@ workflow BCFTOOLS {
     BCFNORM(REHEADERVCF.out.reh_bcf, REHEADERVCF.out.reh_idx, ch_ref)
     SOFTFILTERVCF(BCFNORM.out.bcf_norm, BCFNORM.out.idx_norm)
     FILTERVCF(SOFTFILTERVCF.out.bcf_filt, SOFTFILTERVCF.out.idx_filt)
-    VCFSNPS2FASTA(FILTERVCF.out.vcf_pass, FILTERVCF.out.sample_list)
+    VCFSNPS2FASTA(FILTERVCF.out.vcf_pass)
     VCF2PHYLIP(FILTERVCF.out.vcf_pass)
 
     emit:
-    pass_vcf  = FILTERVCF.out.vcf_pass
-    msa_snp   = VCFSNPS2FASTA.out.snp_msa
-    aln_snp   = VCF2PHYLIP.out.snp_aln
-    aln_fold  = VCF2PHYLIP.out.fold_aln
+    pass_vcf             = FILTERVCF.out.vcf_pass
+    msa_snp              = VCFSNPS2FASTA.out.snp_msa
+    snp_sites            = VCFSNPS2FASTA.out.sites
+    snp_alignment_qc     = VCFSNPS2FASTA.out.alignment_qc
+    snp_distances        = VCFSNPS2FASTA.out.distances
+    snp_comparable_sites = VCFSNPS2FASTA.out.comparable_sites
+    snp_manifest         = VCFSNPS2FASTA.out.manifest
+    aln_snp              = VCF2PHYLIP.out.snp_aln
+    aln_fold             = VCF2PHYLIP.out.fold_aln
 }
