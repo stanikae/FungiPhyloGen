@@ -90,7 +90,14 @@ process BCFMERGE {
 
     script:
     """
-    # List of files passed directly (no -l flag)
+    # Per-sample inputs are sparse SNP-only BCFs. The -0 option represents
+    # absent SNP records as reference genotypes when constructing the
+    # population SNP matrix.
+    #
+    # Sparse record absence cannot distinguish confident reference calls
+    # from insufficient coverage. Therefore, downstream profiles use AC,
+    # AN and AF for population representation and do not use F_MISSING.
+
     bcftools merge \
         --threads ${task.cpus} \
         -0 \
@@ -98,7 +105,7 @@ process BCFMERGE {
         -Ob \
         -o merged.bcf
 
-    bcftools index merged.bcf
+    bcftools index --threads ${task.cpus} merged.bcf
     """
 }
 
