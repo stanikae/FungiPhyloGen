@@ -1,10 +1,9 @@
-.DS_Store
-**/.DS_Store
-.nextflow.log*
-resolved_config*.txt
-**/__pycache__/
-*.py[cod]
 
-# Python bytecode
 __pycache__/
+.DS_Store
+.nextflow.log*
 *.py[cod]
+**/__pycache__/
+**/.DS_Store
+# Python bytecode
+resolved_config*.txt

@@ -15,6 +15,7 @@ Built on **Nextflow**, FPG leverages containerized **Conda** environments to ens
     * **Hard Filter:** Removes low-depth noise (`DP < 5`) per sample to optimize merging.
     * **Soft Filter:** Applies complex, organism-specific quality thresholds (e.g., `MQ`, `QUAL`, `FS`) via config profiles.
 * **Phylogenetics:** Generates Maximum Likelihood trees (**IQ-TREE**) and Neighbor-Joining trees (**RapidNJ**) with bootstrap support.
+* **Auditable SNP alignments:** Converts the final multi-sample PASS VCF directly into a canonical SNP alignment, retained-site manifest, alignment QC report, pairwise SNP-distance matrix, and pairwise comparable-site matrix. The converter does not apply additional biological filtering.
 * **Resistance Profiling:** Automated annotation of resistance mutations in key genes (*ERG11*, *FKS1*, *FUR1*) using **SnpEff**.
 
 ## 🛠️ Installation
@@ -179,6 +180,7 @@ Sample_B,/full/path/to/Sample_B_R1.fastq.gz,/full/path/to/Sample_B_R2.fastq.gz
 * **Conda:** Uses the central Conda path defined in `nextflow.config`.
 
 ```bash
+NXF_SYNTAX_PARSER=v1 \
 nextflow run main_fpg.nf \
     -c FungiPhyloGen.config \
     -profile slurm \
@@ -193,6 +195,7 @@ nextflow run main_fpg.nf \
 * **Resources:** Caps usage at 4 CPUs and 8GB RAM to prevent crashing your laptop.
 
 ```bash
+NXF_SYNTAX_PARSER=v1 \
 nextflow run main_fpg.nf \
     -c FungiPhyloGen.config \
     -profile standard \
@@ -205,6 +208,7 @@ By default, the pipeline uses the bundled _Candida auris_ reference genome. To u
 
 
 ```bash
+NXF_SYNTAX_PARSER=v1 \
 nextflow run main_fpg.nf \
    -c FungiPhyloGen.config \
    -profile standard \
@@ -224,9 +228,23 @@ Results are saved in the `results/` folder (or directory specified by `--results
 | `trimmed/` | `*.fq.gz` | Cleaned FASTQ files. |
 | `variants/` | `final_vcf/final.pass.vcf.gz` | **The Final Output.** High-quality SNPs only. |
 | `snpeff_annotation/` | `snpeff_ann.vcf` | VCF annotated with gene changes (Synonymous/Missense). |
+| `variants/msa/` | `fpg_snp_aln.fa` | Canonical SNP-only alignment used by IQ-TREE, RapidNJ, and SNP-distance analysis. |
+| `variants/msa/` | `fpg_snp_sites.tsv` | Alignment-column provenance, genomic coordinates, reconstructed alternate alleles, source-record counts, and ambiguity counts. |
+| `variants/msa/` | `fpg_snp_alignment_qc.tsv` | Alignment dimensions, source-record totals, reconstructed split positions, and per-taxon ambiguous-base counts. |
+| `variants/msa/` | `fpg_snp_distances.tsv` | Raw pairwise SNP-difference matrix. |
+| `variants/msa/` | `fpg_snp_comparable_sites.tsv` | Pairwise number of comparable A/C/G/T alignment sites used to interpret each SNP distance. |
 | `iqtree_phylogeny/` | `*.treefile` | Maximum Likelihood tree (Newick format). |
 | `snp_distances/snpdists/` | `FungiPhylogen.snpdist.csv` | Pairwise SNP count matrix. |
 | `multiqc/` | `multiqc_report.html` | Aggregate quality report. |
+
+## SNP alignment and distance construction
+
+FungiPhyloGen constructs its canonical downstream SNP alignment directly from `final.pass.vcf.gz`. All biological variant-quality filtering is completed upstream by the `bcftools` processes and the selected filter profile. The alignment converter does not reapply `QUAL`, `MQ`, `FS`, `MQSBZ`, depth, allele-count, allele-frequency, or missingness thresholds.
+
+The converter reconstructs normalized split multiallelic records into one biological genomic position, preserves explicit missing haploid genotypes as `N`, rejects non-haploid or contradictory genotype states, and records every retained column in `fpg_snp_sites.tsv`. Pairwise distances exclude comparisons involving `N`; `fpg_snp_comparable_sites.tsv` reports the denominator for every sample pair.
+
+The same canonical `fpg_snp_aln.fa` is supplied to IQ-TREE and RapidNJ. The generated `fpg_snp_distances.tsv` matrix is validated against `snp-dists` semantics.
+
 
 
 ## 🔬 Downstream Analysis: Targeted Mutation Report (*C. auris*)

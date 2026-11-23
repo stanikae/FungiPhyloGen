@@ -1,0 +1,6 @@
+Taxon	reference	S1	S2	S3	S4
+reference	0	1	2	2	1
+S1	1	0	1	1	1
+S2	2	1	0	0	2
+S3	2	1	0	0	2
+S4	1	1	2	2	0
