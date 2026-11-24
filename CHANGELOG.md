@@ -34,6 +34,10 @@ All notable changes to FungiPhyloGen are documented here.
 - Large workflow intermediates, including trimmed reads, alignment files, per-sample BCFs, merged BCFs, and reheadered BCFs, are now published as symbolic links to avoid unnecessary duplication of Nextflow work files.
 - Corrected `samtools sort` and `samtools index` argument ordering for compatibility with current Samtools releases.
 - Made SNP-distance output cleanup compatible with both BSD `sed` on macOS and GNU `sed` on Linux.
+- Revised the default `cneoformans` profile for genomic epidemiology by replacing the cohort-size-dependent `INFO/AF>=0.25` requirement with `INFO/AC>=2`, requiring a high-quality alternate allele to be represented in at least two haploid isolates regardless of cohort size.
+- Added `cneoformans_all` for maximum-resolution phylogenetic analysis with high-quality private SNPs retained.
+- Added `cneoformans_common` to preserve the previous `INFO/AF>=0.25` common-variant behaviour for population-level analyses.
+- Validated the recurrent `cneoformans` profile independently on VNB and VNBII cohorts. Production PASS/FAIL classifications, canonical SNP alignments, and pairwise SNP-distance matrices reproduced independently generated `AC>=2` expectations exactly.
 
 ### Validation
 
