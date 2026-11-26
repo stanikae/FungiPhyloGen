@@ -4,6 +4,14 @@ All notable changes to FungiPhyloGen are documented here.
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-11-26
+
+### Changed
+
+- Consolidated *Cryptococcus* SNP filtering into three shared profiles: `crypto` for recurrent ALT alleles (`AC >= 2`), `crypto_all` for quality-only SNP selection, and `crypto_common` for intentional common-allele selection (`AF >= 0.25`).
+- Documented reference selection separately from profile selection. Recurrent filtering was evaluated on VNB and VNBII against H99 and on VGIV against IND107.
+- Retained `cneoformans` as a compatibility alias for `crypto_common`, preserving its v1.2.0 filtering behaviour.
+
 ## [1.2.0] - 2026-11-23
 
 ### Added
