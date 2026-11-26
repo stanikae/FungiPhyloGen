@@ -171,7 +171,7 @@ class ConverterTests(unittest.TestCase):
 
             self.assertEqual(
                 manifest["fungiphylogen"]["version"],
-                "1.2.0",
+                Path("VERSION").read_text(encoding="utf-8").strip(),
             )
             self.assertEqual(
                 manifest["fungiphylogen"]["git_commit"],

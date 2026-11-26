@@ -94,9 +94,9 @@ FungiPhyloGen applies species-appropriate population-SNP filters to the normaliz
 | `cauris_batch` | ≥ 0.25 | Backward-compatible alias for `cauris` |
 | `wanomalus_small` | ≥ 0.75 | Conservative *Wickerhamomyces anomalus* population-SNP profile |
 | `wanomalus_batch` | ≥ 0.85 | Ultra-high-purity *W. anomalus* population-SNP profile |
-| `cneoformans` | AC ≥ 2 | Conservative *Cryptococcus neoformans* genomic-epidemiology profile; retains high-quality SNPs observed in at least two haploid isolates |
-| `cneoformans_all` | No population-frequency threshold | Maximum-resolution *C. neoformans* profile retaining high-quality private SNPs |
-| `cneoformans_common` | AF ≥ 0.25 | Common-variant *C. neoformans* profile for population-level analyses |
+| `crypto` | AC ≥ 2 | Recurrent ALT alleles for conservative genomic epidemiology |
+| `crypto_all` | None | Quality-filtered SNPs, including private variants, for exploratory phylogenetics |
+| `crypto_common` | AF ≥ 0.25 | Analyses intentionally restricted to common ALT alleles |
 | `cparapsilosis` | Species-specific | *Candida parapsilosis* profile using its dedicated depth-normalized expression |
 
 For new *C. auris* analyses, use:
@@ -107,27 +107,9 @@ For new *C. auris* analyses, use:
 
 `cauris_small` and `cauris_batch` are backward-compatible aliases for `cauris`. All three profile names apply the same filtering expression.
 
-### Cryptococcus analysis profiles
-
-The Cryptococcus profiles separate variant quality from analysis purpose:
-
-- `cneoformans` is the recommended default for genomic epidemiology and outbreak analysis. In addition to the core SNP quality criteria, the alternate allele must be observed in at least two haploid isolates (`INFO/AC >= 2`). Unlike an allele-frequency threshold, this recurrence requirement has the same biological meaning regardless of cohort size.
-- `cneoformans_all` retains all SNPs that pass the core quality criteria, including private variants (`AC=1`). This profile provides maximum phylogenetic resolution and is intended for analyses where isolate-specific variation is deliberately retained and interpreted alongside sample, mapping, and reference QC.
-- `cneoformans_common` retains the previous `INFO/AF >= 0.25` behaviour. It is intended for analyses that deliberately restrict inference to common population variants.
-
-All three Cryptococcus profiles use the same core site-quality criteria:
-
-- SNP records only;
-- `MQ >= 40`;
-- `QUAL >= 30`;
-- `FS <= 60`;
-- `MQSBZ` between `-2` and `2` when the annotation is present.
-
-Profile selection should be based on the biological question rather than simply on the number of isolates in the cohort.
-
 #### Population-SNP criteria
 
-The haploid SNP profiles share the core site-quality criteria described below. Population-representation criteria are profile-specific and are applied only where explicitly listed in the profile table.
+The `general` and `cauris` profiles exclude a record when any of the following is true:
 
 ```text
 TYPE!="snp"
@@ -171,6 +153,15 @@ TYPE="snp" && QUAL>=20 && INFO/DP>=5
 
 This permissive filter is applied before merging. Final population-SNP selection is performed on the normalized multi-sample callset with the selected profile.
 
+### Cryptococcus analysis profiles
+
+Choose the profile by analysis purpose, not by cohort size. All three profiles apply the same SNP quality criteria: `MQ >= 40`, `QUAL >= 30`, `FS <= 60`, and `MQSBZ` between `-2` and `2` when present. `crypto` requires the same ALT allele in at least two called haploid isolates (`INFO/AC >= 2`). `crypto_all` does not apply an AC or AF threshold. `crypto_common` requires `INFO/AF >= 0.25` in the sampled cohort.
+
+Select the mapping reference separately from the filter profile. Use a FASTA and matching GenBank annotation from the same assembly. The VNB and VNBII audits used H99 (VNI; not a VNB-matched reference). The VGIV audit used IND107 (*Cryptococcus tetragattii*, `GCF_000835755.1`). IND107 is not a universal reference for the *C. gattii* species complex.
+
+For molecular-type investigations, compare query isolates with a labelled panel on a suitable shared reference coordinate system. Use phylogenetic placement and SNP distances together, and assess callable overlap before assigning a type. With sparse calls and `bcftools merge -0`, an absent record can be represented as REF; zero `N` bases does not establish callability. The current audits validate filter behaviour for the tested cohorts, not automated molecular-type assignment or transmission cutoffs. SNP distances from different filters or reference assemblies are not directly interchangeable. Use `--filter_profile crypto` for the recurrent rule previously tested under the interim `cneoformans` and `cgattii` keys.
+
+The deprecated `cneoformans` key remains available for compatibility with the v1.2.0 `AF >= 0.25` behaviour. For new runs, use `crypto_common` to select that rule explicitly.
 
 ## 🏃 Usage
 
