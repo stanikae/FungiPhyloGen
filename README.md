@@ -24,16 +24,20 @@ Built on **Nextflow**, FPG leverages containerized **Conda** environments to ens
 Ensure you have the following installed on your system:
 * [Conda](https://docs.conda.io/en/latest/) (or Mamba/Micromamba for speed)
 * [Git](https://git-scm.com/)
-* [Nextflow](https://www.nextflow.io/)
+* [Nextflow](https://www.nextflow.io/) and a Java runtime compatible with the installed Nextflow version
 
-### 2. Clone Repository
+### 2. Clone the repository
+
+For a reproducible installation, clone the release tag. The example uses `v1.2.1` and keeps the checkout directory named `FungiPhyloGen`.
+
 ```bash
-mkdir -p $HOME/github
-cd $HOME/github
-
-git clone https://github.com/stanikae/FungiPhyloGen.git
+mkdir -p "$HOME/github" &&
+cd "$HOME/github" &&
+git clone --branch v1.2.1 https://github.com/stanikae/FungiPhyloGen.git FungiPhyloGen &&
 cd FungiPhyloGen
 ```
+
+If `FungiPhyloGen` already exists, use a different parent directory or verify the existing checkout before reusing it. Do not overwrite an existing installation.
 
 ### 3. Setup Environments
 FPG uses modular environments. To streamline installation, automated setup scripts are provided for both Linux and macOS. These scripts will automatically build all required Conda environments.
@@ -57,26 +61,26 @@ chmod +x setup_envs_osx.sh
 ./setup_envs_osx.sh
 ```
 
-## ⚙️ Configuration (Crucial)
+## ⚙️ Configuration
 
-To ensure the pipeline runs smoothly on different infrastructures, you must configure the **Conda Paths** and **Filter Profiles** in `FungiPhyloGen.config`.
+After cloning, open **`FungiPhyloGen.config`** and update the settings for the system that will execute the workflow. You can edit this file or make a site-specific copy. Set `CONFIG` in the launch template to the file you actually edited. Keep the config filename as supplied; pass it explicitly with `-c "$CONFIG"`.
 
-### 1. Tool Paths (Conda & Picard)
-The pipeline requires absolute paths to the Conda environments and the Picard JAR file.
-* **Local Runs:** The default is set to `${HOME}/anaconda3/envs`.
-* **HPC Runs:** You **must** override the `condaCacheDir` in the `slurm` profile within nextflow.config i.e. `FungiPhyloGen.config`.
+### 1. Conda paths, tool paths, and Slurm queue
+
+Run `conda env list` to locate the installed `fpg*` environments. Use the **absolute path to the parent directory** containing those environments, not the path to one individual environment.
+
+- **Local (`standard`):** Set `condaCacheDir` in the top-level `params` block. The `standard` profile uses that path through `params.cacheDir`.
+- **Cluster (`slurm`):** In `profiles { slurm { ... } }`, change **both** `process.queue` to your cluster's Slurm partition and `params.condaCacheDir` to the environment directory visible to compute nodes. The Slurm Conda path overrides the top-level setting. Keep `params.cacheDir = params.condaCacheDir`.
+
+Edit these lines inside the **existing** `slurm` profile; do not replace the rest of the block:
 
 ```groovy
-// In nextflow.config -> profiles -> slurm
-slurm {
-    // ...
-    // UPDATE THIS PATH to your central HPC conda environment location e.g.
-    params.CacheDir = "/scratch/package/anaconda/anaconda3/envs" 
-    
-    // This ensures the pipeline finds the correct Picard JAR
-    params.PICARD = "${params.CacheDir}/fpgAlign/share/picard-2.27.4-0/picard.jar"
-}
+process.queue        = 'your_slurm_partition'
+params.condaCacheDir = '/absolute/path/to/conda/envs'
+params.cacheDir      = params.condaCacheDir
 ```
+
+Verify that `PICARD` points to the installed Picard JAR and that `FASTQC_CONF`, `FASTQC_CONTAMINANTS`, and `FASTQC_ADAPTERS` resolve to the installed FastQC configuration directory and files. If the derived paths differ from the installation, update them in the settings used by the selected execution profile. For Slurm runs, the checkout, config, FASTQs, reference files, environments, and work and results directories must be accessible to the compute nodes. Start the Nextflow driver from a location permitted by your cluster.
 
 ### 2. Haploid population-SNP filter profiles
 
@@ -165,71 +169,156 @@ The deprecated `cneoformans` key remains available for compatibility with the v1
 
 ## 🏃 Usage
 
-### 1. Prepare Reference Genome
-You need a FASTA file and a GenBank format annotation file for your target organism.
-* Example: `ref/Clade_I_B8441.fna` and `ref/Clade_I_B8441.gbff`.
+### 1. Check the workflow and runtime versions
 
-### 2. Prepare Samplesheet
-Create a CSV file (e.g., `samplesheet.csv`) containing your sample metadata and read paths. 
+Run from the environment where Nextflow is installed (for example, Conda `base`). Nextflow activates the task-specific environments during the run.
 
-**Crucial:** The headers must be exactly `sampleID`, `read1`, and `read2`.
+```bash
+REPO="$HOME/github/FungiPhyloGen"
+RELEASE="v1.2.1"
+(
+  set -e
+  printf 'FungiPhyloGen version: %s\n' "$(cat "$REPO/VERSION")"
+  CHECKOUT=$(git -C "$REPO" rev-parse HEAD)
+  TAGGED=$(git -C "$REPO" rev-parse --verify "refs/tags/${RELEASE}^{commit}")
+  printf 'Checkout commit: %s\nRelease commit:  %s\n' "$CHECKOUT" "$TAGGED"
+  if [ "$(cat "$REPO/VERSION")" != "${RELEASE#v}" ] || [ "$CHECKOUT" != "$TAGGED" ]; then
+    printf 'STOP: checkout does not match %s.\n' "$RELEASE" >&2
+    exit 1
+  fi
+  git -C "$REPO" status --short
+  nextflow -version
+  java -version
+  conda --version
+)
+```
+
+`VERSION` reports the **FungiPhyloGen release**; `nextflow -version` reports the **Nextflow runtime**. The Git comparison verifies the committed revision, not local edits. Review the status output before launch. Local path edits in `FungiPhyloGen.config` are expected if you edited it directly; do not overlook changes to filter rules or workflow code.
+
+### 2. Prepare the inputs
+
+Create a run directory and a `samplesheet.csv` with one row per isolate, unique sample IDs, and absolute paths to both FASTQs. Use this exact header:
 
 ```csv
 sampleID,read1,read2
-Sample_A,/full/path/to/Sample_A_R1.fastq.gz,/full/path/to/Sample_A_R2.fastq.gz
-Sample_B,/full/path/to/Sample_B_R1.fastq.gz,/full/path/to/Sample_B_R2.fastq.gz
+Sample_A,/absolute/path/to/Sample_A_R1.fastq.gz,/absolute/path/to/Sample_A_R2.fastq.gz
+Sample_B,/absolute/path/to/Sample_B_R1.fastq.gz,/absolute/path/to/Sample_B_R2.fastq.gz
 ```
 
-> **Tip:** Use absolute paths (e.g., `/home/user/data/...`) for read files to avoid "File not found" errors, especially when running on an HPC.
+Keep the reference FASTA and GenBank annotation from the **same assembly**. Set their paths explicitly in the launch command. The filter profile does not select a reference.
 
+| Example analysis | Reference pair | `FILTER_PROFILE` |
+|---|---|---|
+| Known *C. auris* Clade I cohort | B8441 FASTA and its matching GenBank annotation | `cauris` |
+| *Cryptococcus* VGIV cohort | IND107 FASTA and its matching GenBank annotation | `crypto` |
 
-### 3. Run the Pipeline
+For other cohorts, choose the reference and filter independently. See [Cryptococcus analysis profiles](#cryptococcus-analysis-profiles) for reference scope and the `crypto_all` and `crypto_common` alternatives.
 
-**Option A: HPC Cluster (Slurm)**
-* **Profile:** `-profile slurm`
-* **Resources:** Uses the high-memory configuration (up to 128GB) and submits jobs to the batch queue.
-* **Conda:** Uses the central Conda path defined in `nextflow.config`.
+### 3. Launch on a local machine or Slurm
+
+Edit the variables at the top, then paste the **entire block**, including the parentheses, into Bash or zsh. Use a separate run directory per dataset. For Slurm, complete the queue and Conda setup above before launching.
 
 ```bash
-NXF_SYNTAX_PARSER=v1 \
-nextflow run main_fpg.nf \
-    -c FungiPhyloGen.config \
-    -profile slurm \
-    -resume \
-    --samplesheet ./samplesheet.csv \
-    --filter_profile cauris \
-    --prjName "FPG_Run01"
+(
+  set -e
+  set -o pipefail
+
+  REPO="$HOME/github/FungiPhyloGen"
+  RUN="/absolute/path/to/run"
+  CONFIG="$REPO/FungiPhyloGen.config"
+  WORK="$RUN/work"
+  OUT="$RUN/results"
+  SHEET="$RUN/samplesheet.csv"
+  REF="$RUN/ref/reference.fna"
+  GBK="$RUN/ref/genomic.gbff"
+
+  EXEC_PROFILE="slurm"
+  FILTER_PROFILE="cauris"
+  PROJECT_NAME="FPG_Run01"
+  RUN_MODE="fresh"
+  RESUME_SESSION=""
+
+  command -v nextflow >/dev/null 2>&1 || {
+    printf 'STOP: Nextflow is not available in this shell.\n' >&2
+    exit 1
+  }
+
+  for FILE in "$REPO/main_fpg.nf" "$REPO/VERSION" "$CONFIG" "$SHEET" "$REF" "$GBK"; do
+    if [ ! -s "$FILE" ]; then
+      printf 'STOP: missing or empty file: %s\n' "$FILE" >&2
+      exit 1
+    fi
+  done
+
+  case "$EXEC_PROFILE" in
+    standard|slurm) ;;
+    *) printf 'STOP: choose standard or slurm.\n' >&2; exit 1 ;;
+  esac
+
+  RESUME_ARGS=()
+  case "$RUN_MODE" in
+    fresh) ;;
+    resume)
+      if [ ! -d "$RUN/.nextflow/cache" ] || [ ! -d "$WORK" ]; then
+        printf 'STOP: resume requires the original Nextflow cache and work directory.\n' >&2
+        exit 1
+      fi
+      RESUME_ARGS=(-resume)
+      if [ -n "$RESUME_SESSION" ]; then
+        RESUME_ARGS+=("$RESUME_SESSION")
+      fi
+      ;;
+    *) printf 'STOP: RUN_MODE must be fresh or resume.\n' >&2; exit 1 ;;
+  esac
+
+  if [ -e "$OUT" ] || [ -L "$OUT" ]; then
+    printf 'STOP: choose a new results directory: %s\n' "$OUT" >&2
+    exit 1
+  fi
+
+  cd "$RUN"
+  CHECK=$(mktemp -d "$RUN/run-logs.XXXXXX")
+  printf 'FungiPhyloGen: %s\nLogs: %s\nResults: %s\n' \
+    "$(cat "$REPO/VERSION")" "$CHECK" "$OUT"
+
+  NXF_SYNTAX_PARSER=v1 nextflow run "$REPO/main_fpg.nf" \
+    -c "$CONFIG" \
+    -profile "$EXEC_PROFILE" \
+    "${RESUME_ARGS[@]}" \
+    -work-dir "$WORK" \
+    --inputDir "$RUN" \
+    --resultsDir "$OUT" \
+    --samplesheet "$SHEET" \
+    --refseq "$REF" \
+    --gbk "$GBK" \
+    --filter_profile "$FILTER_PROFILE" \
+    --prjName "$PROJECT_NAME" \
+    -with-trace "$CHECK/trace.txt" \
+    -with-report "$CHECK/report.html" \
+    2>&1 | tee "$CHECK/run.log"
+)
 ```
 
-**Option B: Local Machine (Testing)**
-* **Profile:** `-profile standard`
-* **Resources:** Caps usage at 4 CPUs and 8GB RAM to prevent crashing your laptop.
+| Setting | What to use |
+|---|---|
+| `EXEC_PROFILE` | `standard` for local execution or `slurm` for a configured cluster. This determines where tasks run. |
+| `FILTER_PROFILE` | Selects the SNP-filtering rule, independently of the execution profile and reference. |
+| `RUN_MODE` | `fresh` for a new run. For `resume`, reuse the original launch directory, work directory, and input paths. Keep the original settings unless intentionally changing them. |
+| `RESUME_SESSION` | Leave empty to resume the last run. If the launch directory contains multiple runs, use `nextflow log` from that directory to identify the session to resume and set its ID here. |
+| `OUT` | A new published-results directory for this attempt. For a resume, change it to a new name, such as `$RUN/results-resumed`. |
+| `CHECK` | Created automatically. It stores `run.log`, `trace.txt`, and `report.html` separately from published results and the work cache. |
+
+### 4. Monitor and verify the run
+
+At startup, confirm that the banner shows the expected **FASTA, GenBank annotation, filter profile, and exclusion expression**. In a separate terminal, use the directory printed under `Logs:`:
 
 ```bash
-NXF_SYNTAX_PARSER=v1 \
-nextflow run main_fpg.nf \
-    -c FungiPhyloGen.config \
-    -profile standard \
-    --samplesheet ./samplesheet.csv \
-    --filter_profile cauris
+tail -f "/path/printed/under/Logs/run.log"
 ```
 
-### 4. Running with Custom Reference Genomes
-By default, the pipeline uses the bundled _Candida auris_ reference genome. To use your own reference genome (e.g., for _C. parapsilosis_, _Emergomyces_, or other species), you must override the defaults using the `--refseq` and `--gbk` flags.
+`Ctrl+C` in the monitoring terminal stops `tail`, not Nextflow. If the workflow fails, check `run.log` and the driver log (`.nextflow.log` in the launch directory). `tee` copies output to the terminal and log; `pipefail` preserves a failing Nextflow exit status. When pasting into an interactive shell, the surrounding parentheses keep `set -e` scoped to the launch block. A GNU Screen window started directly with a script can close when that script exits, so open an interactive Screen shell first if you want to retain the prompt after the run.
 
-
-```bash
-NXF_SYNTAX_PARSER=v1 \
-nextflow run main_fpg.nf \
-   -c FungiPhyloGen.config \
-   -profile standard \
-   --samplesheet ./samplesheet.csv \
-   --refseq /absolute/path/to/your/custom_reference.fna \
-   --gbk /absolute/path/to/your/custom_reference.gbk \
-   --filter_profile general
-```
-
-> **Note:** Ensure you use **absolute paths** for your reference files. If the pipeline cannot locate the files specified in these flags, it will fail.
+Check the trace for completed tasks and, on resumed runs, for tasks marked `CACHED`. Resume does not guarantee that all tasks will be reused. After completion, review the final PASS VCF and the alignment QC and distance outputs described below. Keep the work directory while you still need to resume or access published symlinks.
 
 ## 📂 Outputs
 Results are saved in the `results/` folder (or directory specified by `--resultsDir`).
@@ -335,22 +424,21 @@ python ~/github/FungiPhyloGen/scripts/clean_report_v2.py \
 
 ## 🆘 Troubleshooting
 
-**1. "CRITICAL ERROR: Invalid Filter Profile"**
-* **Cause:** You passed a profile name to `--filter_profile` that doesn't exist in the `filters` block of `nextflow.config`.
-* **Fix:** Check `nextflow.config` for the list of valid keys (e.g., `cauris_small`).
+**1. Invalid filter profile**
 
-**2. "Argument of file function cannot be null"**
-* **Cause:** The samplesheet often has an empty trailing line or incorrect headers.
-* **Fix:** Ensure headers are exactly `sampleID,read1,read2` and remove empty rows.
+Use a key from `params.filters` in `FungiPhyloGen.config`, such as `cauris` or `crypto`. The filter profile is separate from the `standard` or `slurm` execution profile.
 
-**3. "Picard JAR not found"**
-* **Cause:** The pipeline is looking for `picard.jar` in the wrong location (e.g., local home dir) while running on Slurm.
-* **Fix:** Check the `slurm` profile in `nextflow.config`. Ensure `params.CacheDir` is explicitly overridden to point to your HPC environment path.
+**2. A file argument is null or an input cannot be found**
 
-**4. Pipeline ignores config / "Params are null"**
-* **Cause:** Nextflow is not reading your configuration file because it is named `FungiPhyloGen.config` instead of the default `nextflow.config`.
-* **Fix:** Rename the file: `mv FungiPhyloGen.config nextflow.config`, or explicitly pass it with `-c FungiPhyloGen.config`.
+Check the CSV header (`sampleID,read1,read2`), remove empty rows, and confirm the FASTQs and reference pair are readable. For Slurm, verify the paths are visible to compute nodes, not just the login node.
 
+**3. Picard JAR or FastQC support files cannot be found**
+
+Check `PICARD` and the `FASTQC_*` settings in the selected execution profile. For Slurm, confirm that `params.condaCacheDir` points to the correct environment directory and that the derived file paths match the installation.
+
+**4. Configuration did not load or Slurm jobs fail to submit**
+
+Pass the edited `FungiPhyloGen.config` (or its site-specific copy) with `-c "$CONFIG"`. Verify the config path in the startup banner. For Slurm, check that `process.queue` names a partition you can submit to and review the driver log for the scheduler error.
 
 ## 👥 Credits & Citations
 
@@ -382,4 +470,3 @@ This pipeline leverages the following excellent open-source tools. If you use Fu
 This work was supported by **[]** under grant number **[]**.
 
 * **Principal Investigator:** [Professor Nelesh Govender](https://www.wits.ac.za/people/academic-a-z-listing/g/neleshgovenderwitsacza/)
-* **Grant Title:** []
